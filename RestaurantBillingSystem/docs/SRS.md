@@ -101,3 +101,18 @@ Different permissions will be provided to Admin and Cashier users.
 ## 10. Project Status
 
 Under Development
+
+## 11. System Architecture
+
+The Restaurant Billing System follows a layered desktop application architecture.
+
+```text
+User
+ ↓
+Tkinter GUI
+ ↓
+Application / Business Logic
+ ↓
+SQLite Database
+ ↓
+Audit Logs / Error Logs / Backup
