@@ -156,8 +156,31 @@ def create_tables():
     connection.commit()
     connection.close()
 
+def create_default_users():
+    """
+    Create default Admin and Cashier accounts if they do not exist.
+    """
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    users = [
+        ("admin", "admin123", "Admin"),
+        ("cashier", "cash123", "Cashier")
+    ]
+
+    for username, password, role in users:
+        cursor.execute("""
+            INSERT OR IGNORE INTO users (username, password, role)
+            VALUES (?, ?, ?)
+        """, (username, password, role))
+
+    connection.commit()
+    connection.close()
 
 if __name__ == "__main__":
     create_tables()
+    create_default_users()
+
     print("Database created successfully.")
     print(f"Database location: {DATABASE_FILE}")
