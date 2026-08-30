@@ -145,3 +145,28 @@ Cashier users will have access to:
 Administrative functions such as User Management, Audit Logs, and Backup will not be displayed to Cashier users.
 
 This role separation supports the Q01 reliability goal by reducing unauthorized or accidental changes to administrative system functions.
+
+## 15. Menu Management
+
+The system will provide menu management functionality for restaurant items.
+
+Menu items will contain:
+
+- Item Name
+- Category
+- Price
+- Availability
+
+The system will validate menu information before storing it in the database.
+
+### Input Validation Rules
+
+1. Item name cannot be empty.
+2. Category must be selected.
+3. Price cannot be empty.
+4. Price must be numeric.
+5. Price must be greater than zero.
+
+Invalid data will not be inserted into the database.
+
+This supports Q01 - Improve Reliability by preventing invalid menu information from entering the system.
