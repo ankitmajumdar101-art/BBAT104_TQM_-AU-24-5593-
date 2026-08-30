@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 from database.database import get_connection
+from gui.dashboard import start_dashboard
 
 
 class LoginWindow:
@@ -128,11 +129,9 @@ class LoginWindow:
                     f"Role: {user['role']}"
                 )
 
-                print(
-                    f"Login successful | "
-                    f"User: {user['username']} | "
-                    f"Role: {user['role']}"
-                )
+                self.root.destroy()
+
+                start_dashboard(user)
 
             else:
                 messagebox.showerror(

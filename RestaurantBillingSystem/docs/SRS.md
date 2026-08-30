@@ -116,3 +116,32 @@ Application / Business Logic
 SQLite Database
  ↓
 Audit Logs / Error Logs / Backup
+
+## 14. User Role Permissions
+
+The system will provide role-based access.
+
+### Admin
+
+Admin users will have access to:
+
+- Dashboard
+- Billing
+- Bill History
+- Menu Management
+- User Management
+- Audit Logs
+- Backup
+
+### Cashier
+
+Cashier users will have access to:
+
+- Dashboard
+- Billing
+- Bill History
+- Menu
+
+Administrative functions such as User Management, Audit Logs, and Backup will not be displayed to Cashier users.
+
+This role separation supports the Q01 reliability goal by reducing unauthorized or accidental changes to administrative system functions.
