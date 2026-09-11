@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from database.database import get_connection
+from utils.audit_logger import log_action
 
 
 # =====================================================
@@ -452,6 +453,13 @@ class MenuWindow:
             connection.commit()
 
             connection.close()
+            log_action(
+                self.user["id"],
+                self.user["username"],
+                self.user["role"],
+                "ADD_MENU",
+                f"Added menu item: {name}, Category: {category}, Price: {price:.2f}"
+            )
 
             messagebox.showinfo(
                 "Success",
