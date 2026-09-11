@@ -387,10 +387,11 @@ class DashboardWindow:
     # =====================================================
 
     def open_audit_logs(self):
+        from gui.audit_logs import start_audit_logs
 
-        messagebox.showinfo(
-            "Audit Logs",
-            "Audit Log module will be implemented in a later step."
+        start_audit_logs(
+            self.root,
+            self.user
         )
 
     # =====================================================
