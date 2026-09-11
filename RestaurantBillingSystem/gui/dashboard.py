@@ -110,7 +110,6 @@ class DashboardWindow:
 
         quality_label = tk.Label(
             self.root,
-            text="Q01 - Improve Reliability",
             bg=CREAM,
             fg=DARK_BROWN,
             font=("Arial", 17, "bold")
@@ -275,7 +274,6 @@ class DashboardWindow:
 
         footer = tk.Label(
             self.root,
-            text="TQM Project • Quality Goal: Improve Reliability",
             bg=CREAM,
             fg=DARK_BROWN,
             font=("Arial", 9)

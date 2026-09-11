@@ -3,6 +3,7 @@ from tkinter import messagebox
 
 from database.database import get_connection
 from gui.dashboard import start_dashboard
+from utils.audit_logger import log_action
 
 
 # =====================================================
@@ -196,7 +197,6 @@ class LoginWindow:
 
         quality_label = tk.Label(
             self.root,
-            text="Q01 - Improve Reliability",
             bg=CREAM,
             fg=DARK_BROWN,
             font=("Arial", 10, "bold")
@@ -272,15 +272,15 @@ class LoginWindow:
             # -------------------------------------------------
 
             if user:
-
-                messagebox.showinfo(
-                    "Login Successful",
-                    f"Welcome {user['username']}!\n\n"
-                    f"Role: {user['role']}"
+                log_action(
+                    user["id"],
+                    user["username"],
+                    user["role"],
+                    "LOGIN",
+                    "Successful login"
                 )
 
-                self.root.destroy()
-
+                messagebox.showinfo("Login Successful", f"Welcome {user['username']}!")
                 start_dashboard(user)
 
             # -------------------------------------------------

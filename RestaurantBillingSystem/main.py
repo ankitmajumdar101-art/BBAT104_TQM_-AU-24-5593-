@@ -84,7 +84,6 @@ class MainWindow:
 
         subtitle = tk.Label(
             content,
-            text="Quality Goal: Improve Reliability",
             bg=CREAM,
             fg=DARK_BROWN,
             font=("Arial", 18, "bold")
@@ -138,7 +137,6 @@ class MainWindow:
 
         footer = tk.Label(
             content,
-            text="TQM Project • Q01 - Improve Reliability",
             bg=CREAM,
             fg=DARK_BROWN,
             font=("Arial", 10)
