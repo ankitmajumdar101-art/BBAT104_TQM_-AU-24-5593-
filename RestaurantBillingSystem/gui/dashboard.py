@@ -400,9 +400,11 @@ class DashboardWindow:
 
     def open_backup(self):
 
-        messagebox.showinfo(
-            "Backup",
-            "Auto Backup module will be implemented in a later step."
+        from gui.backup import start_backup
+
+        start_backup(
+            self.root,
+            self.user
         )
 
     # =====================================================
