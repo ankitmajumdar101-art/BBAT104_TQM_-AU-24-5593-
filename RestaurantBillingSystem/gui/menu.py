@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 
 from database.database import get_connection
 from utils.audit_logger import log_action
-
+from utils.error_handler import handle_error
 
 # =====================================================
 # COLOR THEME
@@ -430,6 +430,8 @@ class MenuWindow:
 
         available = self.available_var.get()
 
+        connection = None
+
         try:
 
             connection = get_connection()
@@ -452,7 +454,6 @@ class MenuWindow:
 
             connection.commit()
 
-            connection.close()
             log_action(
                 self.user["id"],
                 self.user["username"],
@@ -472,12 +473,21 @@ class MenuWindow:
 
         except Exception as error:
 
-            messagebox.showerror(
-                "Database Error",
-                "Unable to add menu item."
+            if connection:
+                connection.rollback()
+
+            handle_error(
+                self.root,
+                self.user,
+                error,
+                module="Menu Management",
+                recovery_message="The menu item was not added. Please check the information and try again."
             )
 
-            print(f"Menu error: {error}")
+        finally:
+
+            if connection:
+                connection.close()
 
     # =================================================
     # LOAD ITEMS
@@ -533,12 +543,13 @@ class MenuWindow:
 
         except Exception as error:
 
-            messagebox.showerror(
-                "Database Error",
-                "Unable to load menu items."
+            handle_error(
+                self.root,
+                self.user,
+                error,
+                module="Menu Loading",
+                recovery_message="The menu could not be loaded. Please try again."
             )
-
-            print(f"Load menu error: {error}")
 
     # =================================================
     # CLEAR FORM
