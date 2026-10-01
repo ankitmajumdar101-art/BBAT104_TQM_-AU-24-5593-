@@ -403,10 +403,30 @@ class DashboardWindow:
 
     def open_user_management(self):
 
-        messagebox.showinfo(
-            "User Management",
-            "User Management will be implemented in a later step."
-        )
+        try:
+
+            from gui.user_management import start_user_management
+
+            print("Opening User Management...")
+
+            start_user_management(
+                self.root,
+                self.user
+            )
+
+            print("User Management opened successfully.")
+
+        except Exception as error:
+
+            import traceback
+
+            print("USER MANAGEMENT ERROR:")
+            traceback.print_exc()
+
+            messagebox.showerror(
+                "User Management Error",
+                f"Unable to open User Management.\n\n{error}"
+            )
 
     # =====================================================
     # AUDIT LOGS
