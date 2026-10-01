@@ -58,6 +58,9 @@ The project includes:
 These documents explain how to use and install the application.
 ## Project Structure
 ```text
+## Project Structure
+
+```text
 RestaurantBillingSystem/
 │
 ├── database/
@@ -68,6 +71,9 @@ RestaurantBillingSystem/
 │   ├── login.py
 │   ├── dashboard.py
 │   ├── menu.py
+│   ├── billing.py
+│   ├── bill_history.py
+│   ├── user_management.py
 │   ├── backup.py
 │   └── audit_logs.py
 │
@@ -97,4 +103,4 @@ RestaurantBillingSystem/
 │       └── RELIABILITY_VERIFICATION.md
 │
 └── main.py
-
+```
