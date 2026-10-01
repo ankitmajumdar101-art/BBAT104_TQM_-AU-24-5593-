@@ -349,10 +349,23 @@ class DashboardWindow:
 
     def open_bill_history(self):
 
-        messagebox.showinfo(
-            "Bill History",
-            "Bill History module will be implemented in a later step."
-        )
+        try:
+
+            from gui.bill_history import start_bill_history
+
+            start_bill_history(
+                self.root,
+                self.user
+            )
+
+        except Exception as error:
+
+            messagebox.showerror(
+                "Bill History Error",
+                "Unable to open Bill History."
+            )
+
+            print(f"Bill history error: {error}")
 
     # =====================================================
     # MENU
