@@ -325,10 +325,23 @@ class DashboardWindow:
 
     def open_billing(self):
 
-        messagebox.showinfo(
-            "Billing",
-            "Billing module will be implemented in a later step."
-        )
+        try:
+
+            from gui.billing import start_billing
+
+            start_billing(
+                self.root,
+                self.user
+            )
+
+        except Exception as error:
+
+            messagebox.showerror(
+                "Billing Error",
+                "Unable to open Billing."
+            )
+
+            print(f"Billing error: {error}")
 
     # =====================================================
     # BILL HISTORY
