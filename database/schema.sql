@@ -189,7 +189,7 @@ VALUES
     ('admin', '$2a$10$.NrIalhXGD0Lwa2BJhXohu02C2JXEJcPj0R/al.2OIhnkOULgz/se', 'Admin', 'System Administrator', 'admin@restaurant.com', '+91 9876543211'),
     ('cashier', '$2a$10$y04eV/RUbsEtRDQzKNQuF.YNrUS4wa9I71F/ivcSvF.WdOQG9gEfO', 'Cashier', 'Front Desk Cashier', 'cashier@restaurant.com', '+91 9876543212'),
     ('kitchen_chef', '$2a$10$bqvILnI1dBXlZoz2ZDGChuUxlmTfAmTWTONLzhyK4vVNOu0EvJbxG', 'Kitchen Staff', 'Chef Vikram Anand', 'chef.vikram@royalfeast.com', '+91 98300 77889')
-ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name), password=VALUES(password), must_change_password=0;
 
 -- Default Menu Categories
 INSERT INTO categories (name, description)
