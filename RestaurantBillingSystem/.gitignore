@@ -1,16 +1,32 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
 .venv/
 venv/
 env/
+tempCodeRunnerFile*
 
+# SQLite
 *.db
 *.sqlite
 *.sqlite3
-
 backups/
 
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+build/
+.env
+.env.local
+
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
