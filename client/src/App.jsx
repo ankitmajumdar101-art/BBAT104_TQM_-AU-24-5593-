@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Navbar from './components/Navbar';
-import POSBilling from './components/POSBilling';
-import BillHistory from './components/BillHistory';
 import OwnerDashboard from './components/owner/OwnerDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
+import CashierDashboard from './components/cashier/CashierDashboard';
+import POSBilling from './components/POSBilling';
+import BillHistory from './components/BillHistory';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [activeTab, setActiveTab] = useState('pos');
+  const [activeTab, setActiveTab] = useState('cashier');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,8 +29,10 @@ export default function App() {
           setActiveTab('owner');
         } else if (parsedUser.role === 'Admin') {
           setActiveTab('admin');
+        } else if (parsedUser.role === 'Cashier') {
+          setActiveTab('cashier');
         } else {
-          setActiveTab('pos');
+          setActiveTab('kitchen');
         }
       } catch (e) {
         localStorage.clear();
@@ -48,8 +51,10 @@ export default function App() {
       setActiveTab('owner');
     } else if (loggedInUser.role === 'Admin') {
       setActiveTab('admin');
+    } else if (loggedInUser.role === 'Cashier') {
+      setActiveTab('cashier');
     } else {
-      setActiveTab('pos');
+      setActiveTab('kitchen');
     }
   };
 
@@ -57,7 +62,7 @@ export default function App() {
     setUser(null);
     setToken(null);
     localStorage.clear();
-    setActiveTab('pos');
+    setActiveTab('cashier');
   };
 
   if (loading) {
@@ -74,6 +79,7 @@ export default function App() {
 
   const isOwner = user.role === 'Owner';
   const isAdmin = user.role === 'Admin';
+  const isCashier = user.role === 'Cashier';
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
@@ -89,11 +95,13 @@ export default function App() {
 
         {isAdmin && <AdminDashboard currentUser={user} onLogout={handleLogout} />}
 
-        {!isOwner && !isAdmin && (
-          <>
-            {activeTab === 'pos' && <POSBilling user={user} />}
-            {activeTab === 'history' && <BillHistory />}
-          </>
+        {isCashier && <CashierDashboard currentUser={user} onLogout={handleLogout} />}
+
+        {!isOwner && !isAdmin && !isCashier && (
+          <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
+            <h2 style={{ color: '#0F172A' }}>Kitchen Display & Order Pipeline</h2>
+            <p style={{ color: '#64748B' }}>Real-time food preparation queue for Kitchen Staff.</p>
+          </div>
         )}
       </main>
     </div>

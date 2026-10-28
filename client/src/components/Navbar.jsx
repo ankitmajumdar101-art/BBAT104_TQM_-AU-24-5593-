@@ -30,10 +30,9 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
       { id: 'admin', label: 'Admin Operations Dashboard', icon: ShieldCheck, roles: ['Admin'] }
     ];
   } else if (isCashier) {
-    portalTitle = 'FRONT DESK BILLING & POS';
+    portalTitle = '🧾 FRONT DESK CASHIER PORTAL';
     navItems = [
-      { id: 'pos', label: 'POS Billing', icon: Receipt, roles: ['Cashier'] },
-      { id: 'history', label: 'Bill History', icon: History, roles: ['Cashier'] }
+      { id: 'cashier', label: 'Cashier Terminal', icon: Receipt, roles: ['Cashier'] }
     ];
   } else {
     portalTitle = 'KITCHEN ORDER SURVEILLANCE';

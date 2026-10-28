@@ -168,4 +168,81 @@ router.post('/force-change-password', authenticateToken, async (req, res, next) 
   }
 });
 
+// POST /api/auth/change-password - For authenticated users to change their own password
+router.post('/change-password', authenticateToken, async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Current password and new password are required.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
+    }
+
+    const [users] = await db.query('SELECT id, username, password FROM users WHERE id = ?', [req.user.id]);
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, users[0].password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.query('UPDATE users SET password = ?, must_change_password = 0 WHERE id = ?', [hashedPassword, req.user.id]);
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'CHANGE_PASSWORD',
+      details: `User ${req.user.username} updated their account password`
+    });
+
+    res.json({ success: true, message: 'Password updated successfully!' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/auth/profile - Update personal profile information
+router.put('/profile', authenticateToken, async (req, res, next) => {
+  try {
+    const { full_name, email, phone } = req.body;
+    if (!full_name || !full_name.trim()) {
+      return res.status(400).json({ success: false, message: 'Full name cannot be empty.' });
+    }
+
+    await db.query(
+      'UPDATE users SET full_name = ?, email = ?, phone = ? WHERE id = ?',
+      [(full_name || '').trim(), (email || '').trim(), (phone || '').trim(), req.user.id]
+    );
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'UPDATE_PROFILE',
+      details: `User ${req.user.username} updated personal profile info`
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully!',
+      user: {
+        id: req.user.id,
+        username: req.user.username,
+        role: req.user.role,
+        full_name: full_name.trim(),
+        email: (email || '').trim(),
+        phone: (phone || '').trim()
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
