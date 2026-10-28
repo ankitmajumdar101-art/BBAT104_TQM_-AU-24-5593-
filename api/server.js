@@ -14,6 +14,7 @@ const usersRoutes = require('./routes/users');
 const analyticsRoutes = require('./routes/analytics');
 const auditRoutes = require('./routes/audit');
 const backupRoutes = require('./routes/backup');
+const ownerRoutes = require('./routes/owner');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +46,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/owner', ownerRoutes);
 
 // Serve Production React Frontend
 const clientDist = path.join(__dirname, '../client/dist');

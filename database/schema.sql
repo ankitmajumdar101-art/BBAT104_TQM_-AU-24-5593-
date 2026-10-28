@@ -72,8 +72,8 @@ CREATE TABLE IF NOT EXISTS orders (
     discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00 CHECK (discount_amount >= 0),
     total DECIMAL(10, 2) NOT NULL DEFAULT 0.00 CHECK (total >= 0),
     payment_method ENUM('Cash', 'UPI', 'Card') NOT NULL DEFAULT 'Cash',
-    payment_status ENUM('Paid', 'Pending', 'Cancelled') NOT NULL DEFAULT 'Paid',
-    order_status ENUM('Completed', 'Preparing', 'Cancelled') NOT NULL DEFAULT 'Completed',
+    payment_status ENUM('Paid', 'Pending', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Paid',
+    order_status ENUM('Completed', 'Preparing', 'Cancelled', 'Voided') NOT NULL DEFAULT 'Completed',
     notes TEXT,
     created_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -135,6 +135,29 @@ CREATE TABLE IF NOT EXISTS backup_logs (
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- ------------------------------------------------------------
+-- 9. EXPENSES TABLE (Stakeholder 1 - Owner Financial Analysis & P&L)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category VARCHAR(50) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
+    description VARCHAR(255) NOT NULL,
+    expense_date DATE NOT NULL,
+    recorded_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- ------------------------------------------------------------
+-- 10. RESTAURANT SETTINGS TABLE (Owner Business Profile Settings)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS restaurant_settings (
+    setting_key VARCHAR(50) PRIMARY KEY,
+    setting_value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 -- ============================================================
 -- SEED DATA
 -- ============================================================
@@ -179,6 +202,29 @@ VALUES
     (5, 'Gulab Jamun', 'Warm fried milk-solid balls in saffron syrup', 80.00, 1),
     (5, 'Chocolate Brownie with Ice Cream', 'Warm fudge brownie served with vanilla ice cream', 160.00, 1)
 ON DUPLICATE KEY UPDATE price=VALUES(price);
+
+-- Default Restaurant Business Settings (Owner Managed)
+INSERT INTO restaurant_settings (setting_key, setting_value)
+VALUES 
+    ('restaurant_name', 'Royal Feast Restaurant'),
+    ('tagline', 'Finest Dine-in & Gourmet Experience'),
+    ('address', '101 Commercial Boulevard, City Center'),
+    ('phone', '+91 98765 43210'),
+    ('email', 'contact@royalfeast.com'),
+    ('gstin', '27AABCR1234F1Z8'),
+    ('receipt_header', 'ROYAL FEAST RESTAURANT'),
+    ('receipt_footer', 'Thank you for dining with us! Please visit again.'),
+    ('currency_symbol', '₹')
+ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
+
+-- Sample Baseline Expenses
+INSERT INTO expenses (category, amount, description, expense_date, recorded_by)
+VALUES 
+    ('Ingredients & Food Cost', 3200.00, 'Fresh dairy, organic vegetables and spices', CURDATE(), 1),
+    ('Utilities & Electricity', 850.00, 'Commercial gas refill and electricity share', CURDATE(), 1),
+    ('Staff Wages', 4000.00, 'Kitchen steward and helper weekly wages', DATE_SUB(CURDATE(), INTERVAL 2 DAY), 1),
+    ('Packaging & Disposables', 450.00, 'Eco-friendly food boxes and napkins', DATE_SUB(CURDATE(), INTERVAL 4 DAY), 1)
+ON DUPLICATE KEY UPDATE amount=VALUES(amount);
 
 -- Initial Audit Log
 INSERT INTO audit_logs (username, role, action, details)

@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 
-// POST /api/orders - Create a new bill (Cashier, Admin, Owner)
-router.post('/', authenticateToken, async (req, res, next) => {
+// POST /api/orders - Create a new bill (Cashier and Admin only; Owner is strictly read-only)
+router.post('/', authenticateToken, authorizeRoles('Cashier', 'Admin'), async (req, res, next) => {
   const connection = await db.getConnection();
   try {
     const {

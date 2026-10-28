@@ -12,16 +12,20 @@ import {
 
 export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
   const isOwner = user?.role === 'Owner';
-  const isAdmin = user?.role === 'Admin' || isOwner;
+  const isAdmin = user?.role === 'Admin';
+  const isCashier = user?.role === 'Cashier';
 
-  const navItems = [
-    { id: 'pos', label: 'POS Billing', icon: Receipt, roles: ['Owner', 'Admin', 'Cashier'] },
-    { id: 'history', label: 'Bill History', icon: History, roles: ['Owner', 'Admin', 'Cashier'] },
-    { id: 'menu', label: 'Menu Management', icon: UtensilsCrossed, roles: ['Owner', 'Admin'] },
-    { id: 'users', label: 'User Management', icon: Users, roles: ['Owner', 'Admin'] },
-    { id: 'analytics', label: 'Owner Analytics', icon: BarChart3, roles: ['Owner'] },
-    { id: 'audit', label: 'Audit & Backup', icon: ShieldCheck, roles: ['Owner', 'Admin'] }
-  ];
+  const navItems = isOwner
+    ? [
+        { id: 'owner', label: 'Owner Executive Dashboard', icon: BarChart3, roles: ['Owner'] }
+      ]
+    : [
+        { id: 'pos', label: 'POS Billing', icon: Receipt, roles: ['Admin', 'Cashier'] },
+        { id: 'history', label: 'Bill History', icon: History, roles: ['Admin', 'Cashier'] },
+        { id: 'menu', label: 'Menu Management', icon: UtensilsCrossed, roles: ['Admin'] },
+        { id: 'users', label: 'User Management', icon: Users, roles: ['Admin'] },
+        { id: 'audit', label: 'Audit & Backup', icon: ShieldCheck, roles: ['Admin'] }
+      ];
 
   const visibleItems = navItems.filter(item => item.roles.includes(user?.role));
 
@@ -68,8 +72,8 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
             <h1 style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '-0.3px', margin: 0 }}>
               Royal Feast
             </h1>
-            <p style={{ fontSize: '11px', color: '#FCD34D', margin: 0, fontWeight: '600' }}>
-              RESTAURANT BILLING & POS
+            <p style={{ fontSize: '11px', color: '#FCD34D', margin: 0, fontWeight: '700', letterSpacing: '0.4px' }}>
+              {isOwner ? '👑 EXECUTIVE OWNER PORTAL' : 'RESTAURANT BILLING & POS'}
             </p>
           </div>
         </div>
