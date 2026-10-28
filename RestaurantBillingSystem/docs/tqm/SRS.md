@@ -1,172 +1,76 @@
 # Software Requirements Specification (SRS)
 
 ## 1. Project Title
-
-Restaurant Billing System - Q01: Improve Reliability
+Restaurant Billing & POS Web Application - Quality Goal: Q01 - Improve Reliability
 
 ## 2. Quality Goal
-
-Improve Reliability
+**Q01: Improve Reliability & Multi-Stakeholder Operational Excellence**
 
 ## 3. Project Objective
-
-The objective of the system is to provide a reliable desktop application for restaurant order processing and billing.
+The objective of the system is to provide a real-time, responsive, web-based Point of Sale (POS) and restaurant billing application that guarantees transactional accuracy, operational reliability, and role-based access for restaurant staff and management.
 
 ## 4. Scope
+The web application supports restaurant operations across the full dining lifecycle:
+- Menu catalog and stock availability management
+- Touch-friendly billing desk with dynamic cart, table selection, and discount/tax calculations
+- Instant thermal receipt printing (80mm/58mm) and dynamic UPI QR code payments
+- Executive Owner analytics covering real-time revenue, top-selling dishes, and payment distribution
+- Staff user management with encrypted authentication (BCrypt)
+- Continuous reliability assurance via audit logging, error recovery, and automated database backups
 
-The system will support restaurant staff in managing menu items, creating bills, maintaining billing records, managing users, and generating basic reports.
+The project specifically enforces software reliability through five quality features:
+1. **Auto Backup:** Automated MySQL database dumps to timestamped `.sql` files.
+2. **Audit Logging:** Centralized tracking of every financial and administrative transaction in `audit_logs`.
+3. **Input Validation:** Strict server-side and client-side sanitization, preventing invalid or tampering inputs.
+4. **Error Recovery:** Centralized Express middleware intercepting exceptions and recording traces in `error_logs`.
+5. **Role-Based Access Control (RBAC):** Strict JWT verification separating Owner, Admin, and Cashier functions.
 
-The project will specifically focus on improving reliability using five quality features:
+## 5. Target Stakeholders
 
-- Auto Backup
-- Audit Log
-- Input Validation
-- Error Recovery
-- User Roles
+### 1. Restaurant Owner
+- Views executive performance KPIs: Today's Revenue, Total Gross Revenue, Invoices Count, and Average Order Value.
+- Analyzes top-selling dishes and revenue breakdowns by payment method (Cash, UPI, Card).
+- Oversees staff accounts and operational reliability.
 
-## 5. Target Users
+### 2. Admin
+- Manages food menu items (Add, Edit prices, Delete, and live Out-of-Stock toggles).
+- Manages staff user accounts and permissions.
+- Inspects comprehensive audit logs and triggers database backups.
 
-### Admin
+### 3. Cashier
+- Operates the real-time POS billing terminal.
+- Searches dishes and selects items with category filter pills.
+- Adjusts quantities, assigns tables, inputs customer mobile numbers, and applies discounts.
+- Generates bills, presents dynamic UPI QR codes, and prints itemized tax receipts.
 
-The administrator manages users, menu data, backups, audit logs, and system operations.
+### 4. Customer
+- Receives transparent, itemized bills with legal GST tax breakdowns (2.5% CGST + 2.5% SGST).
+- Receives printed 80mm thermal receipts or digital QR payments.
 
-### Cashier
-
-The cashier creates bills, manages customer orders, and views billing information.
+### 5. Developer / Maintainer
+- Manages REST endpoints, database integrity, error logs, and automated test suites.
 
 ## 6. Functional Requirements
-
 The system shall:
-
-1. Allow authorized users to log in.
-2. Allow administrators to manage menu items.
-3. Allow cashiers to create restaurant bills.
-4. Store billing information in a database.
-5. Validate user input before storing data.
-6. Maintain an audit log of important activities.
-7. Automatically create database backups.
-8. Handle application errors without unnecessary crashes.
-9. Restrict system operations according to user roles.
-10. Allow users to view previous bills.
+1. Authenticate users using encrypted BCrypt passwords and issue JWT session tokens.
+2. Provide role-based dashboards tailored to Owner, Admin, and Cashier permissions.
+3. Allow Cashiers to select food items, adjust quantities, choose tables, and compute 5% GST and discounts.
+4. Enforce server-side pricing recalculation to eliminate client-side price tampering.
+5. Provide live, scannable dynamic UPI QR codes directly on receipts for instant payment.
+6. Support browser printing for standard 80mm/58mm thermal receipt printers.
+7. Record all bill creations, logins, menu modifications, and backups in MySQL `audit_logs`.
+8. Provide full CRUD capabilities for menu management (Add, Edit, Delete, Stock Availability).
+9. Provide User Management capabilities (Create, Edit roles, Deactivate, Delete).
+10. Generate full MySQL database backups on demand with file verification.
 
 ## 7. Non-Functional Requirements
+- **Reliability:** Centralized error recovery ensures unexpected exceptions are caught, logged, and surfaced gracefully without crashing the server.
+- **Data Integrity:** ACID-compliant MySQL transactions (`START TRANSACTION`, `COMMIT`, `ROLLBACK`) protect order and line-item creation.
+- **Security:** Passwords salted and hashed with BCrypt (cost factor 10); API endpoints protected via JWT headers.
+- **Maintainability:** Decoupled architecture with React.js frontend, Express.js REST API, and relational MySQL database.
 
-### Reliability
-
-The application should continue operating safely when expected errors occur.
-
-### Data Accuracy
-
-The system should prevent invalid billing and menu information.
-
-### Security
-
-Users should only access functions permitted by their roles.
-
-### Maintainability
-
-The application should use a modular structure so that individual components can be modified and tested.
-
-## 8. Technology
-
-- Python 3.x
-- Tkinter
-- SQLite3
-- Pandas
-- Matplotlib
-- Seaborn
-
-## 9. Quality Features
-
-### Auto Backup
-
-The system will create database backups to reduce the risk of permanent data loss.
-
-### Audit Log
-
-Important user and system activities will be recorded.
-
-### Input Validation
-
-Invalid or incomplete input will be rejected before database operations.
-
-### Error Recovery
-
-Expected application errors will be handled safely and recorded where appropriate.
-
-### User Roles
-
-Different permissions will be provided to Admin and Cashier users.
-
-## 10. Project Status
-
-Under Development
-
-## 11. System Architecture
-
-The Restaurant Billing System follows a layered desktop application architecture.
-
-```text
-User
- ↓
-Tkinter GUI
- ↓
-Application / Business Logic
- ↓
-SQLite Database
- ↓
-Audit Logs / Error Logs / Backup
-
-## 14. User Role Permissions
-
-The system will provide role-based access.
-
-### Admin
-
-Admin users will have access to:
-
-- Dashboard
-- Billing
-- Bill History
-- Menu Management
-- User Management
-- Audit Logs
-- Backup
-
-### Cashier
-
-Cashier users will have access to:
-
-- Dashboard
-- Billing
-- Bill History
-- Menu
-
-Administrative functions such as User Management, Audit Logs, and Backup will not be displayed to Cashier users.
-
-This role separation supports the Q01 reliability goal by reducing unauthorized or accidental changes to administrative system functions.
-
-## 15. Menu Management
-
-The system will provide menu management functionality for restaurant items.
-
-Menu items will contain:
-
-- Item Name
-- Category
-- Price
-- Availability
-
-The system will validate menu information before storing it in the database.
-
-### Input Validation Rules
-
-1. Item name cannot be empty.
-2. Category must be selected.
-3. Price cannot be empty.
-4. Price must be numeric.
-5. Price must be greater than zero.
-
-Invalid data will not be inserted into the database.
-
-This supports Q01 - Improve Reliability by preventing invalid menu information from entering the system.
+## 8. Technology Stack
+- **Frontend:** HTML5, CSS3, JavaScript (ES6+), React.js (Vite), Lucide Icons, `qrcode.react`
+- **Backend:** Node.js, Express.js (REST API Architecture)
+- **Database:** MySQL / MariaDB (XAMPP Server on Port 3306)
+- **Security:** BCrypt, JSON Web Tokens (JWT), CORS
