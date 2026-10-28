@@ -35,9 +35,9 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
       { id: 'cashier', label: 'Cashier Terminal', icon: Receipt, roles: ['Cashier'] }
     ];
   } else {
-    portalTitle = 'KITCHEN ORDER SURVEILLANCE';
+    portalTitle = '👨‍🍳 KITCHEN DISPLAY SYSTEM (KDS)';
     navItems = [
-      { id: 'kitchen', label: 'Kitchen Display', icon: UtensilsCrossed, roles: ['Kitchen Staff'] }
+      { id: 'kitchen', label: 'Chef Station', icon: UtensilsCrossed, roles: ['Kitchen Staff'] }
     ];
   }
 
@@ -46,7 +46,8 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
   const roleBadgeColors = {
     Owner: 'background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D;',
     Admin: 'background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE;',
-    Cashier: 'background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0;'
+    Cashier: 'background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0;',
+    'Kitchen Staff': 'background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5;'
   };
 
   return (

@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_status VARCHAR(50) NOT NULL DEFAULT 'Paid',
     order_status VARCHAR(50) NOT NULL DEFAULT 'Completed',
     kitchen_status VARCHAR(50) NOT NULL DEFAULT 'New',
+    kitchen_updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     amount_received DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     change_due DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     transaction_reference VARCHAR(100) DEFAULT '',
@@ -180,12 +181,14 @@ CREATE TABLE IF NOT EXISTS restaurant_settings (
 -- Default Users (Passwords encrypted with BCrypt, cost factor 10)
 -- owner / owner123
 -- admin / admin123
--- cashier / cash123
+-- cashier / cashier123
+-- kitchen_chef / kitchen123
 INSERT INTO users (username, password, role, full_name, email, phone)
 VALUES 
     ('owner', '$2a$10$ZdngespcLulbbrbgKyvy8eXa6hhR2MOni.pNJWohDiVjMqy1VfG7y', 'Owner', 'Restaurant Owner', 'owner@restaurant.com', '+91 9876543210'),
     ('admin', '$2a$10$.NrIalhXGD0Lwa2BJhXohu02C2JXEJcPj0R/al.2OIhnkOULgz/se', 'Admin', 'System Administrator', 'admin@restaurant.com', '+91 9876543211'),
-    ('cashier', '$2a$10$y04eV/RUbsEtRDQzKNQuF.YNrUS4wa9I71F/ivcSvF.WdOQG9gEfO', 'Cashier', 'Front Desk Cashier', 'cashier@restaurant.com', '+91 9876543212')
+    ('cashier', '$2a$10$y04eV/RUbsEtRDQzKNQuF.YNrUS4wa9I71F/ivcSvF.WdOQG9gEfO', 'Cashier', 'Front Desk Cashier', 'cashier@restaurant.com', '+91 9876543212'),
+    ('kitchen_chef', '$2a$10$bqvILnI1dBXlZoz2ZDGChuUxlmTfAmTWTONLzhyK4vVNOu0EvJbxG', 'Kitchen Staff', 'Chef Vikram Anand', 'chef.vikram@royalfeast.com', '+91 98300 77889')
 ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
 -- Default Menu Categories

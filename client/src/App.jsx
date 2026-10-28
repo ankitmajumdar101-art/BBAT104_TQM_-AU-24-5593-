@@ -4,13 +4,12 @@ import Navbar from './components/Navbar';
 import OwnerDashboard from './components/owner/OwnerDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import CashierDashboard from './components/cashier/CashierDashboard';
-import POSBilling from './components/POSBilling';
-import BillHistory from './components/BillHistory';
+import KitchenDashboard from './components/kitchen/KitchenDashboard';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [activeTab, setActiveTab] = useState('cashier');
+  const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,8 +30,10 @@ export default function App() {
           setActiveTab('admin');
         } else if (parsedUser.role === 'Cashier') {
           setActiveTab('cashier');
-        } else {
+        } else if (parsedUser.role === 'Kitchen Staff') {
           setActiveTab('kitchen');
+        } else {
+          setActiveTab('overview');
         }
       } catch (e) {
         localStorage.clear();
@@ -53,8 +54,10 @@ export default function App() {
       setActiveTab('admin');
     } else if (loggedInUser.role === 'Cashier') {
       setActiveTab('cashier');
-    } else {
+    } else if (loggedInUser.role === 'Kitchen Staff') {
       setActiveTab('kitchen');
+    } else {
+      setActiveTab('overview');
     }
   };
 
@@ -62,7 +65,7 @@ export default function App() {
     setUser(null);
     setToken(null);
     localStorage.clear();
-    setActiveTab('cashier');
+    setActiveTab('overview');
   };
 
   if (loading) {
@@ -80,6 +83,7 @@ export default function App() {
   const isOwner = user.role === 'Owner';
   const isAdmin = user.role === 'Admin';
   const isCashier = user.role === 'Cashier';
+  const isKitchen = user.role === 'Kitchen Staff';
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
@@ -97,10 +101,12 @@ export default function App() {
 
         {isCashier && <CashierDashboard currentUser={user} onLogout={handleLogout} />}
 
-        {!isOwner && !isAdmin && !isCashier && (
-          <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
-            <h2 style={{ color: '#0F172A' }}>Kitchen Display & Order Pipeline</h2>
-            <p style={{ color: '#64748B' }}>Real-time food preparation queue for Kitchen Staff.</p>
+        {isKitchen && <KitchenDashboard currentUser={user} onLogout={handleLogout} />}
+
+        {!isOwner && !isAdmin && !isCashier && !isKitchen && (
+          <div style={{ padding: '32px', maxWidth: '800px', margin: '40px auto', textAlign: 'center', background: '#FFF', borderRadius: '16px' }}>
+            <h2 style={{ color: '#0F172A' }}>Account Setup Completed</h2>
+            <p style={{ color: '#64748B' }}>Please contact an administrator to review your assigned system role.</p>
           </div>
         )}
       </main>
