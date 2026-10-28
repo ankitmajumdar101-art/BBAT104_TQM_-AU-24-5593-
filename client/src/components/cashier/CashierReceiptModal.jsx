@@ -1,16 +1,13 @@
 import React from 'react';
 import { Printer, X, CheckCircle2, QrCode, AlertTriangle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { printReceiptElement } from '../../utils/printReceipt';
 
 export default function CashierReceiptModal({ order, onClose, isReprint = false }) {
   if (!order) return null;
 
   const handlePrint = () => {
-    document.body.classList.add('printing-receipt');
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove('printing-receipt');
-    }, 1000);
+    printReceiptElement('printable-receipt', `Receipt_${order.bill_number || 'Bill'}`);
   };
 
   const totalNum = parseFloat(order.total || 0).toFixed(2);
@@ -35,7 +32,7 @@ export default function CashierReceiptModal({ order, onClose, isReprint = false 
   const changeDue = parseFloat(order.change_due || 0).toFixed(2);
 
   return (
-    <div style={{
+    <div className="receipt-modal-backdrop" style={{
       position: 'fixed',
       top: 0,
       left: 0,
@@ -49,7 +46,7 @@ export default function CashierReceiptModal({ order, onClose, isReprint = false 
       zIndex: 1000,
       padding: '16px'
     }}>
-      <div style={{
+      <div className="receipt-modal-card" style={{
         background: '#FFF',
         borderRadius: '20px',
         width: '100%',

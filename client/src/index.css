@@ -114,6 +114,47 @@ input, select, textarea {
 
   /* --- THERMAL RECEIPT SLIP PRINTING (80mm) --- */
   /* Triggered when a receipt modal with #printable-receipt is active or body has .printing-receipt */
+  body:has(#printable-receipt) .no-print,
+  body.printing-receipt .no-print {
+    display: none !important;
+  }
+
+  body:has(#printable-receipt) .receipt-modal-backdrop,
+  body.printing-receipt .receipt-modal-backdrop,
+  body:has(#printable-receipt) div[style*="position: fixed"],
+  body.printing-receipt div[style*="position: fixed"],
+  body:has(#printable-receipt) div[style*="position:fixed"],
+  body.printing-receipt div[style*="position:fixed"] {
+    position: static !important;
+    display: block !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  body:has(#printable-receipt) .receipt-modal-card,
+  body.printing-receipt .receipt-modal-card {
+    position: static !important;
+    display: block !important;
+    background: transparent !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
   body:has(#printable-receipt) *,
   body.printing-receipt * {
     visibility: hidden;
@@ -128,18 +169,20 @@ input, select, textarea {
 
   body:has(#printable-receipt) #printable-receipt,
   body.printing-receipt #printable-receipt {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    position: relative !important;
+    display: block !important;
     width: 80mm !important;
     max-width: 80mm !important;
-    margin: 0 !important;
-    padding: 10px !important;
+    margin: 10px auto !important;
+    padding: 14px 12px !important;
     background: #FFFFFF !important;
     color: #000000 !important;
     font-family: var(--font-mono), 'Courier New', monospace !important;
-    font-size: 12px !important;
-    border: none !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    border: 1px dashed #94A3B8 !important;
     box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }

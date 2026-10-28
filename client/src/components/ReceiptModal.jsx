@@ -1,22 +1,19 @@
 import React from 'react';
 import { Printer, X, CheckCircle2, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { printReceiptElement } from '../utils/printReceipt';
 
 export default function ReceiptModal({ order, onClose }) {
   if (!order) return null;
 
   const handlePrint = () => {
-    document.body.classList.add('printing-receipt');
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove('printing-receipt');
-    }, 1000);
+    printReceiptElement('printable-receipt', `Receipt_${order.bill_number || 'Bill'}`);
   };
 
   const upiString = `upi://pay?pa=royalfeast@upi&pn=RoyalFeastRestaurant&am=${parseFloat(order.total).toFixed(2)}&cu=INR&tn=${order.bill_number}`;
 
   return (
-    <div style={{
+    <div className="receipt-modal-backdrop" style={{
       position: 'fixed',
       top: 0,
       left: 0,
@@ -29,7 +26,7 @@ export default function ReceiptModal({ order, onClose }) {
       zIndex: 1000,
       padding: '16px'
     }}>
-      <div style={{
+      <div className="receipt-modal-card" style={{
         background: '#FFF',
         borderRadius: '16px',
         width: '100%',

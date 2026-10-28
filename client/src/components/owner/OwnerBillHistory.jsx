@@ -14,6 +14,8 @@ import {
   RefreshCw,
   X
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { printReceiptElement } from '../../utils/printReceipt';
 
 export default function OwnerBillHistory() {
   const [bills, setBills] = useState([]);
@@ -87,11 +89,7 @@ export default function OwnerBillHistory() {
   };
 
   const handlePrintModal = () => {
-    document.body.classList.add('printing-receipt');
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove('printing-receipt');
-    }, 1000);
+    printReceiptElement('printable-receipt', `Receipt_${selectedBill?.bill_number || 'Bill'}`);
   };
 
   return (
@@ -384,195 +382,293 @@ export default function OwnerBillHistory() {
       </div>
 
       {/* Read-Only Bill Receipt Modal */}
-      {selectedBill && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: '#FFF',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '480px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            padding: '24px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            position: 'relative'
+      {selectedBill && (() => {
+        const subtotalNum = parseFloat(selectedBill.subtotal || 0).toFixed(2);
+        const cgstRate = settings.tax_rate_cgst || 2.5;
+        const sgstRate = settings.tax_rate_sgst || 2.5;
+        const cgstAmount = ((parseFloat(subtotalNum) * cgstRate) / 100).toFixed(2);
+        const sgstAmount = ((parseFloat(subtotalNum) * sgstRate) / 100).toFixed(2);
+        const discountAmount = parseFloat(selectedBill.discount_amount || 0).toFixed(2);
+        const grandTotalNum = parseFloat(selectedBill.total || 0).toFixed(2);
+        const upiString = `upi://pay?pa=royalfeast@upi&pn=RoyalFeastRestaurant&am=${grandTotalNum}&cu=INR&tn=${selectedBill.bill_number}`;
+
+        return (
+          <div className="receipt-modal-backdrop" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '16px'
           }}>
-            {/* Close Button */}
-            <button
-              className="no-print"
-              onClick={() => setSelectedBill(null)}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                background: '#F1F5F9',
-                border: 'none',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
+            <div className="receipt-modal-card" style={{
+              background: '#FFF',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '460px',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+              overflow: 'hidden',
+              border: '1px solid #E2E8F0',
+              position: 'relative'
+            }}>
+              {/* Modal Header */}
+              <div className="no-print" style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#64748B'
-              }}
-            >
-              <X size={18} />
-            </button>
+                justifyContent: 'space-between',
+                padding: '14px 20px',
+                borderBottom: '1px solid #E2E8F0',
+                background: '#FEF3C7'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={18} color="#B45309" />
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: '#92400E' }}>
+                    Owner Bill Surveillance • Read-Only
+                  </span>
+                </div>
+                <button
+                  className="no-print"
+                  onClick={() => setSelectedBill(null)}
+                  style={{
+                    background: '#FDE68A',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '30px',
+                    height: '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#92400E'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
 
-            {/* Receipt Content Printable */}
-            <div id="printable-receipt">
-              <div style={{ textAlign: 'center', borderBottom: '1px dashed #CBD5E1', paddingBottom: '14px', marginBottom: '14px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', margin: '0 0 2px 0' }}>
-                  {settings.restaurant_name || 'Royal Feast Restaurant'}
-                </h3>
-                <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0' }}>
-                  {settings.address || 'Civil Lines, Prayagraj, UP'}
-                </p>
-                <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0' }}>
-                  Phone: {settings.phone || '+91 98765 43210'} | GSTIN: {settings.gstin || '09AAAAA0000A1Z5'}
-                </p>
-                <div style={{
-                  display: 'inline-block',
-                  marginTop: '8px',
-                  background: '#FEF3C7',
-                  color: '#92400E',
-                  padding: '3px 10px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: '700'
+              {/* Printable Receipt Body */}
+              <div style={{ padding: '20px', overflowY: 'auto', flex: 1, background: '#F8FAFC' }}>
+                <div id="printable-receipt" style={{
+                  background: '#FFF',
+                  border: '1px dashed #CBD5E1',
+                  borderRadius: '10px',
+                  padding: '20px 18px',
+                  fontFamily: "'Courier New', Courier, monospace",
+                  fontSize: '12px',
+                  color: '#1E293B',
+                  lineHeight: 1.4,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
                 }}>
-                  DUPLICATE AUDIT COPY (READ-ONLY)
-                </div>
-              </div>
-
-              {/* Bill Details */}
-              <div style={{ fontSize: '12px', color: '#475569', marginBottom: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                <div><strong>Bill No:</strong> {selectedBill.bill_number}</div>
-                <div><strong>Table:</strong> Table {selectedBill.table_number}</div>
-                <div><strong>Customer:</strong> {selectedBill.customer_name}</div>
-                <div><strong>Phone:</strong> {selectedBill.customer_phone || 'N/A'}</div>
-                <div><strong>Cashier:</strong> {selectedBill.cashier_full_name || selectedBill.cashier_username}</div>
-                <div><strong>Date:</strong> {new Date(selectedBill.created_at).toLocaleDateString('en-IN')}</div>
-                <div><strong>Time:</strong> {new Date(selectedBill.created_at).toLocaleTimeString('en-IN')}</div>
-                <div><strong>Status:</strong> <span style={{ fontWeight: '700', color: selectedBill.order_status === 'Completed' ? '#059669' : '#DC2626' }}>{selectedBill.order_status}</span></div>
-              </div>
-
-              {/* Items Table */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '14px' }}>
-                <thead>
-                  <tr style={{ borderTop: '1px dashed #CBD5E1', borderBottom: '1px dashed #CBD5E1', textAlign: 'left' }}>
-                    <th style={{ padding: '6px 0' }}>Item</th>
-                    <th style={{ padding: '6px 0', textAlign: 'center' }}>Qty</th>
-                    <th style={{ padding: '6px 0', textAlign: 'right' }}>Price</th>
-                    <th style={{ padding: '6px 0', textAlign: 'right' }}>Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(selectedBill.items || []).map((it, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                      <td style={{ padding: '6px 0', fontWeight: '600' }}>{it.item_name}</td>
-                      <td style={{ padding: '6px 0', textAlign: 'center' }}>{it.quantity}</td>
-                      <td style={{ padding: '6px 0', textAlign: 'right' }}>₹{parseFloat(it.price).toFixed(2)}</td>
-                      <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: '700' }}>₹{parseFloat(it.subtotal).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Financial Breakdown */}
-              <div style={{ borderTop: '1px dashed #CBD5E1', paddingTop: '10px', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748B' }}>Subtotal:</span>
-                  <span style={{ fontWeight: '600' }}>₹{parseFloat(selectedBill.subtotal).toFixed(2)}</span>
-                </div>
-                {parseFloat(selectedBill.discount_amount) > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#D97706' }}>
-                    <span>Discount ({selectedBill.discount_type}):</span>
-                    <span>- ₹{parseFloat(selectedBill.discount_amount).toFixed(2)}</span>
+                  {/* Duplicate Audit Copy Watermark */}
+                  <div style={{
+                    border: '2px dashed #DC2626',
+                    background: '#FEF2F2',
+                    color: '#DC2626',
+                    textAlign: 'center',
+                    padding: '4px',
+                    fontWeight: '900',
+                    fontSize: '11px',
+                    letterSpacing: '1px',
+                    marginBottom: '12px',
+                    borderRadius: '4px'
+                  }}>
+                    *** DUPLICATE AUDIT COPY (READ-ONLY) ***
                   </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#2563EB' }}>
-                  <span>Taxes (5.00% GST):</span>
-                  <span>+ ₹{parseFloat(selectedBill.tax_amount).toFixed(2)}</span>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '15px',
-                  fontWeight: '800',
-                  color: '#0F172A',
-                  borderTop: '1px solid #E2E8F0',
-                  paddingTop: '6px',
-                  marginTop: '4px'
-                }}>
-                  <span>Grand Total:</span>
-                  <span style={{ color: '#059669' }}>₹{parseFloat(selectedBill.total).toFixed(2)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748B' }}>
-                  <span>Payment Method:</span>
-                  <span style={{ fontWeight: '600', color: '#0F172A' }}>{selectedBill.payment_method} ({selectedBill.payment_status})</span>
+
+                  {/* Store Header */}
+                  <div style={{ textAlign: 'center', marginBottom: '14px', borderBottom: '1px dashed #CBD5E1', paddingBottom: '12px' }}>
+                    <h2 style={{ fontSize: '17px', fontWeight: '900', color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '0.5px' }}>
+                      {settings.receipt_header || settings.restaurant_name || 'ROYAL FEAST RESTAURANT'}
+                    </h2>
+                    <p style={{ margin: '0 0 2px 0', fontSize: '11px', color: '#475569' }}>
+                      {settings.address || 'Civil Lines, Prayagraj, UP'}
+                    </p>
+                    <p style={{ margin: '0 0 2px 0', fontSize: '11px', color: '#475569' }}>
+                      Phone: {settings.phone || '+91 98765 43210'}
+                    </p>
+                    <p style={{ margin: 0, fontSize: '11px', fontWeight: '700', color: '#0F172A' }}>
+                      GSTIN: {settings.gstin || '09AAAAA0000A1Z5'}
+                    </p>
+                    <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: '700', background: '#F1F5F9', padding: '2px 8px', borderRadius: '4px', display: 'inline-block' }}>
+                      TAX INVOICE
+                    </div>
+                  </div>
+
+                  {/* Bill Meta */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                    <span><strong>Bill #:</strong> {selectedBill.bill_number}</span>
+                    <span><strong>Table:</strong> #{selectedBill.table_number}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                    <span><strong>Date:</strong> {new Date(selectedBill.created_at).toLocaleDateString('en-IN')}</span>
+                    <span><strong>Time:</strong> {new Date(selectedBill.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                    <span><strong>Cashier:</strong> {selectedBill.cashier_full_name || selectedBill.cashier_username || 'Front Desk'}</span>
+                    <span><strong>Guest:</strong> {selectedBill.customer_name || 'Walk-in'}</span>
+                  </div>
+                  {selectedBill.customer_phone && (
+                    <div style={{ fontSize: '11px', marginBottom: '4px' }}>
+                      <span><strong>Phone:</strong> {selectedBill.customer_phone}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                    <span><strong>Order Status:</strong> {selectedBill.order_status}</span>
+                    <span><strong>Payment:</strong> {selectedBill.payment_status}</span>
+                  </div>
+
+                  {/* Separator */}
+                  <div style={{ borderTop: '1px dashed #CBD5E1', margin: '10px 0' }}></div>
+
+                  {/* Items Table */}
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px dashed #CBD5E1', textAlign: 'left', color: '#475569' }}>
+                        <th style={{ paddingBottom: '6px', width: '50%' }}>ITEM</th>
+                        <th style={{ paddingBottom: '6px', textAlign: 'center', width: '15%' }}>QTY</th>
+                        <th style={{ paddingBottom: '6px', textAlign: 'right', width: '15%' }}>RATE</th>
+                        <th style={{ paddingBottom: '6px', textAlign: 'right', width: '20%' }}>AMT</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selectedBill.items || []).map((item, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px dotted #F1F5F9' }}>
+                          <td style={{ padding: '6px 0', fontWeight: '600' }}>
+                            {item.item_name}
+                          </td>
+                          <td style={{ padding: '6px 0', textAlign: 'center' }}>
+                            {item.quantity}
+                          </td>
+                          <td style={{ padding: '6px 0', textAlign: 'right' }}>
+                            ₹{parseFloat(item.price).toFixed(2)}
+                          </td>
+                          <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: '600' }}>
+                            ₹{parseFloat(item.subtotal).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* Separator */}
+                  <div style={{ borderTop: '1px dashed #CBD5E1', margin: '10px 0' }}></div>
+
+                  {/* Financial Summary */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '11px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Subtotal:</span>
+                      <span>₹{subtotalNum}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B' }}>
+                      <span>CGST ({cgstRate}%):</span>
+                      <span>₹{cgstAmount}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B' }}>
+                      <span>SGST ({sgstRate}%):</span>
+                      <span>₹{sgstAmount}</span>
+                    </div>
+                    {parseFloat(discountAmount) > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#DC2626' }}>
+                        <span>Discount ({selectedBill.discount_type}):</span>
+                        <span>-₹{discountAmount}</span>
+                      </div>
+                    )}
+                    
+                    <div style={{ borderTop: '1px dashed #CBD5E1', margin: '6px 0' }}></div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '900', color: '#0F172A' }}>
+                      <span>GRAND TOTAL:</span>
+                      <span>₹{grandTotalNum}</span>
+                    </div>
+
+                    <div style={{ borderTop: '1px dashed #CBD5E1', margin: '6px 0' }}></div>
+
+                    {/* Payment Details */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                      <span>Payment Mode:</span>
+                      <span style={{ fontWeight: '700' }}>{selectedBill.payment_method} ({selectedBill.payment_status})</span>
+                    </div>
+                  </div>
+
+                  {/* UPI QR Code Section */}
+                  {selectedBill.payment_method === 'UPI' && (
+                    <div style={{ textAlign: 'center', margin: '14px 0 8px 0', borderTop: '1px dashed #CBD5E1', paddingTop: '10px' }}>
+                      <QRCodeSVG value={upiString} size={90} level="M" />
+                      <p style={{ margin: '4px 0 0 0', fontSize: '10px', color: '#64748B' }}>
+                        UPI Payment Verified • royalfeast@upi
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Footer */}
+                  <div style={{ textAlign: 'center', marginTop: '16px', borderTop: '1px dashed #CBD5E1', paddingTop: '10px', color: '#64748B', fontSize: '10px' }}>
+                    <p style={{ margin: '0 0 2px 0', fontWeight: '700', color: '#0F172A' }}>
+                      {settings.receipt_footer || 'Thank you for dining with us! Please visit again.'}
+                    </p>
+                    <p style={{ margin: '0 0 2px 0' }}>FSSAI Lic No: 10020021004567</p>
+                    <p style={{ margin: 0, fontStyle: 'italic' }}>Authorized Owner Audit View • Tamper-Evident Record</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Receipt Footer */}
-              <div style={{ textAlign: 'center', borderTop: '1px dashed #CBD5E1', paddingTop: '12px', marginTop: '14px', fontSize: '11px', color: '#94A3B8' }}>
-                <p style={{ margin: '2px 0' }}>{settings.receipt_footer || 'Thank you for dining with us! Please visit again.'}</p>
-                <p style={{ margin: '2px 0', fontStyle: 'italic' }}>Authorized Owner Audit View • No Direct Edits Permitted</p>
+              {/* Modal Actions */}
+              <div className="no-print" style={{
+                padding: '16px 20px',
+                borderTop: '1px solid #E2E8F0',
+                background: '#FFF',
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '12px'
+              }}>
+                <button
+                  onClick={() => setSelectedBill(null)}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: '10px',
+                    border: '1px solid #CBD5E1',
+                    background: '#FFF',
+                    color: '#475569',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handlePrintModal}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '9px 20px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'var(--primary)',
+                    color: '#FFF',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(115, 15, 25, 0.25)'
+                  }}
+                >
+                  <Printer size={16} />
+                  <span>Print Receipt Copy</span>
+                </button>
               </div>
-            </div>
-
-            {/* Print Action */}
-            <div className="no-print" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
-              <button
-                onClick={() => setSelectedBill(null)}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  background: '#F1F5F9',
-                  color: '#475569',
-                  border: '1px solid #CBD5E1',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                Close
-              </button>
-              <button
-                onClick={handlePrintModal}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 18px',
-                  borderRadius: '8px',
-                  background: 'var(--primary)',
-                  color: '#FFF',
-                  border: 'none',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  cursor: 'pointer'
-                }}
-              >
-                <Printer size={15} /> Print Receipt Copy
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
