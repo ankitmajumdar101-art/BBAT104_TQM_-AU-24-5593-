@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UtensilsCrossed, Lock, User, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { UtensilsCrossed, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
@@ -85,11 +85,6 @@ export default function Login({ onLoginSuccess }) {
     } finally {
       setChangeLoading(false);
     }
-  };
-
-  const handleQuickLogin = (quickUser, quickPass) => {
-    setUsername(quickUser);
-    setPassword(quickPass);
   };
 
   return (
@@ -338,82 +333,12 @@ export default function Login({ onLoginSuccess }) {
                     boxShadow: '0 4px 12px rgba(115, 15, 25, 0.3)'
                   }}
                 >
-                  <span>{loading ? 'Authenticating...' : 'Sign In to POS'}</span>
+                  <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
                   <ArrowRight size={18} />
                 </button>
               </form>
-
-              {/* Quick Demo Logins for Testing & Grading */}
-              <div style={{ marginTop: '28px', paddingTop: '20px', borderTop: '1px solid #E2E8F0' }}>
-                <p style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', textAlign: 'center', marginBottom: '10px' }}>
-                  QUICK STAKEHOLDER DEMO LOGINS:
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('owner', 'owner123')}
-                    style={{
-                      padding: '8px 4px',
-                      borderRadius: '6px',
-                      background: '#FEF3C7',
-                      color: '#92400E',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      border: '1px solid #FCD34D'
-                    }}
-                  >
-                    👔 Owner
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('admin', 'admin123')}
-                    style={{
-                      padding: '8px 4px',
-                      borderRadius: '6px',
-                      background: '#EFF6FF',
-                      color: '#1E40AF',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      border: '1px solid #BFDBFE'
-                    }}
-                  >
-                    ⚙️ Admin
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('cashier', 'cash123')}
-                    style={{
-                      padding: '8px 4px',
-                      borderRadius: '6px',
-                      background: '#ECFDF5',
-                      color: '#065F46',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      border: '1px solid #A7F3D0'
-                    }}
-                  >
-                    💳 Cashier
-                  </button>
-                </div>
-              </div>
             </>
           )}
-        </div>
-
-        <div style={{
-          background: '#F8FAFC',
-          padding: '12px 24px',
-          borderTop: '1px solid #E2E8F0',
-          textAlign: 'center',
-          fontSize: '11px',
-          color: '#64748B',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '6px'
-        }}>
-          <ShieldCheck size={14} color="#10B981" />
-          <span>TQM Q01 Reliability & Role-Based Access Control Enabled</span>
         </div>
       </div>
     </div>

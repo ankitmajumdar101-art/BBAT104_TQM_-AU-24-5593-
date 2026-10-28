@@ -49,7 +49,7 @@ export default function CashierPOS({ user, loadedDraft, onClearLoadedDraft, onBi
       try {
         const token = localStorage.getItem('token');
         const [catRes, menuRes] = await Promise.all([
-          fetch('/api/categories', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/menu/categories', { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch('/api/menu', { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         const catData = await catRes.json();

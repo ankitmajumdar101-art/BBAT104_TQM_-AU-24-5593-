@@ -43,6 +43,7 @@ app.get('/api/health', (req, res) => {
 // Mount API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
+app.get('/api/categories', (req, res) => res.redirect('/api/menu/categories'));
 app.use('/api/orders', ordersRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/analytics', analyticsRoutes);
@@ -50,6 +51,9 @@ app.use('/api/audit', auditRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/users', usersRoutes);
+app.use('/api/admin/audit-logs', auditRoutes);
+app.use('/api/admin/backups', backupRoutes);
 app.use('/api/kitchen', kitchenRoutes);
 
 // Serve Production React Frontend
