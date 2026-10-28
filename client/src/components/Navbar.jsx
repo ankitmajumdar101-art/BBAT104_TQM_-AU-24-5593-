@@ -14,20 +14,35 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
   const isOwner = user?.role === 'Owner';
   const isAdmin = user?.role === 'Admin';
   const isCashier = user?.role === 'Cashier';
+  const isKitchen = user?.role === 'Kitchen Staff';
 
-  const navItems = isOwner
-    ? [
-        { id: 'owner', label: 'Owner Executive Dashboard', icon: BarChart3, roles: ['Owner'] }
-      ]
-    : [
-        { id: 'pos', label: 'POS Billing', icon: Receipt, roles: ['Admin', 'Cashier'] },
-        { id: 'history', label: 'Bill History', icon: History, roles: ['Admin', 'Cashier'] },
-        { id: 'menu', label: 'Menu Management', icon: UtensilsCrossed, roles: ['Admin'] },
-        { id: 'users', label: 'User Management', icon: Users, roles: ['Admin'] },
-        { id: 'audit', label: 'Audit & Backup', icon: ShieldCheck, roles: ['Admin'] }
-      ];
+  let navItems = [];
+  let portalTitle = 'RESTAURANT BILLING & POS';
 
-  const visibleItems = navItems.filter(item => item.roles.includes(user?.role));
+  if (isOwner) {
+    portalTitle = '👑 EXECUTIVE OWNER PORTAL';
+    navItems = [
+      { id: 'owner', label: 'Owner Executive Dashboard', icon: BarChart3, roles: ['Owner'] }
+    ];
+  } else if (isAdmin) {
+    portalTitle = '⚙️ ADMINISTRATOR CONTROL PORTAL';
+    navItems = [
+      { id: 'admin', label: 'Admin Operations Dashboard', icon: ShieldCheck, roles: ['Admin'] }
+    ];
+  } else if (isCashier) {
+    portalTitle = 'FRONT DESK BILLING & POS';
+    navItems = [
+      { id: 'pos', label: 'POS Billing', icon: Receipt, roles: ['Cashier'] },
+      { id: 'history', label: 'Bill History', icon: History, roles: ['Cashier'] }
+    ];
+  } else {
+    portalTitle = 'KITCHEN ORDER SURVEILLANCE';
+    navItems = [
+      { id: 'kitchen', label: 'Kitchen Display', icon: UtensilsCrossed, roles: ['Kitchen Staff'] }
+    ];
+  }
+
+  const visibleItems = navItems;
 
   const roleBadgeColors = {
     Owner: 'background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D;',
@@ -73,7 +88,7 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
               Royal Feast
             </h1>
             <p style={{ fontSize: '11px', color: '#FCD34D', margin: 0, fontWeight: '700', letterSpacing: '0.4px' }}>
-              {isOwner ? '👑 EXECUTIVE OWNER PORTAL' : 'RESTAURANT BILLING & POS'}
+              {portalTitle}
             </p>
           </div>
         </div>

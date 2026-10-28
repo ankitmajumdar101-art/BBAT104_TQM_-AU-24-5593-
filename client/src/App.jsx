@@ -3,10 +3,8 @@ import Login from './components/Login';
 import Navbar from './components/Navbar';
 import POSBilling from './components/POSBilling';
 import BillHistory from './components/BillHistory';
-import AdminMenu from './components/AdminMenu';
-import AdminUsers from './components/AdminUsers';
 import OwnerDashboard from './components/owner/OwnerDashboard';
-import AuditLogs from './components/AuditLogs';
+import AdminDashboard from './components/admin/AdminDashboard';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -28,6 +26,8 @@ export default function App() {
         // Default tab based on role
         if (parsedUser.role === 'Owner') {
           setActiveTab('owner');
+        } else if (parsedUser.role === 'Admin') {
+          setActiveTab('admin');
         } else {
           setActiveTab('pos');
         }
@@ -46,6 +46,8 @@ export default function App() {
 
     if (loggedInUser.role === 'Owner') {
       setActiveTab('owner');
+    } else if (loggedInUser.role === 'Admin') {
+      setActiveTab('admin');
     } else {
       setActiveTab('pos');
     }
@@ -71,6 +73,7 @@ export default function App() {
   }
 
   const isOwner = user.role === 'Owner';
+  const isAdmin = user.role === 'Admin';
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
@@ -82,15 +85,14 @@ export default function App() {
       />
 
       <main style={{ flex: 1 }}>
-        {isOwner ? (
-          <OwnerDashboard onLogout={handleLogout} />
-        ) : (
+        {isOwner && <OwnerDashboard onLogout={handleLogout} />}
+
+        {isAdmin && <AdminDashboard currentUser={user} onLogout={handleLogout} />}
+
+        {!isOwner && !isAdmin && (
           <>
             {activeTab === 'pos' && <POSBilling user={user} />}
             {activeTab === 'history' && <BillHistory />}
-            {activeTab === 'menu' && <AdminMenu />}
-            {activeTab === 'users' && <AdminUsers currentUser={user} />}
-            {activeTab === 'audit' && <AuditLogs />}
           </>
         )}
       </main>

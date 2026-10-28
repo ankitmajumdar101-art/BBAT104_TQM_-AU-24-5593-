@@ -19,13 +19,20 @@ router.post('/login', async (req, res, next) => {
     }
 
     const [users] = await db.query(
-      `SELECT id, username, password, role, full_name, email, phone, status 
+      `SELECT id, username, password, role, full_name, email, phone, status, must_change_password, last_login 
        FROM users 
        WHERE username = ?`,
       [username.trim()]
     );
 
     if (users.length === 0) {
+      await logAudit({
+        username: username.trim(),
+        role: 'Unknown',
+        action: 'LOGIN_FAILED',
+        details: `Failed login attempt: Username not found (${username.trim()})`,
+        ipAddress: req.ip || '127.0.0.1'
+      });
       return res.status(401).json({
         success: false,
         message: 'Invalid username or password.'
@@ -35,6 +42,14 @@ router.post('/login', async (req, res, next) => {
     const user = users[0];
 
     if (user.status !== 'active') {
+      await logAudit({
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        action: 'LOGIN_BLOCKED',
+        details: `Blocked login attempt for deactivated account (${user.username})`,
+        ipAddress: req.ip || '127.0.0.1'
+      });
       return res.status(403).json({
         success: false,
         message: 'Your account has been deactivated. Please contact the administrator.'
@@ -43,11 +58,22 @@ router.post('/login', async (req, res, next) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      await logAudit({
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        action: 'LOGIN_FAILED',
+        details: `Failed login attempt: Incorrect password for user ${user.username}`,
+        ipAddress: req.ip || '127.0.0.1'
+      });
       return res.status(401).json({
         success: false,
         message: 'Invalid username or password.'
       });
     }
+
+    // Update last_login timestamp
+    await db.query('UPDATE users SET last_login = NOW() WHERE id = ?', [user.id]);
 
     // Generate JWT
     const token = jwt.sign(
@@ -81,7 +107,9 @@ router.post('/login', async (req, res, next) => {
         role: user.role,
         full_name: user.full_name,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        must_change_password: Boolean(user.must_change_password),
+        last_login: user.last_login
       }
     });
   } catch (error) {
@@ -104,6 +132,37 @@ router.get('/me', authenticateToken, async (req, res, next) => {
     }
 
     res.json({ success: true, user: users[0] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/auth/force-change-password - For users required to change temporary password
+router.post('/force-change-password', authenticateToken, async (req, res, next) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.query(
+      'UPDATE users SET password = ?, must_change_password = 0 WHERE id = ?',
+      [hashedPassword, req.user.id]
+    );
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'PASSWORD_RESET_COMPLETED',
+      details: `User ${req.user.username} replaced temporary password with new permanent credentials`
+    });
+
+    res.json({
+      success: true,
+      message: 'Password successfully updated! You can now continue.'
+    });
   } catch (error) {
     next(error);
   }

@@ -19,11 +19,13 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('Owner', 'Admin', 'Cashier') NOT NULL,
+    role ENUM('Owner', 'Admin', 'Cashier', 'Kitchen Staff') NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100),
     phone VARCHAR(20),
     status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+    must_change_password BOOLEAN NOT NULL DEFAULT 0,
+    last_login TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -35,6 +37,7 @@ CREATE TABLE IF NOT EXISTS categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
     description VARCHAR(255),
+    status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -111,7 +114,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------
--- 7. ERROR LOGS TABLE (Q01 Reliability - Failure Recovery)
+-- 7. ERROR LOGS TABLE (Q01 Reliability - Failure Recovery & Diagnostic Tracking)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS error_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -119,7 +122,11 @@ CREATE TABLE IF NOT EXISTS error_logs (
     description TEXT NOT NULL,
     module VARCHAR(100) DEFAULT 'General',
     stack_trace TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    status ENUM('Logged', 'Reviewed', 'Resolved') NOT NULL DEFAULT 'Logged',
+    reviewed_by INT,
+    resolved_at TIMESTAMP NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------
