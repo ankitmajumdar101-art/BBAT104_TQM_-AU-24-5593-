@@ -6,7 +6,11 @@ export default function CashierReceiptModal({ order, onClose, isReprint = false 
   if (!order) return null;
 
   const handlePrint = () => {
+    document.body.classList.add('printing-receipt');
     window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-receipt');
+    }, 1000);
   };
 
   const totalNum = parseFloat(order.total || 0).toFixed(2);

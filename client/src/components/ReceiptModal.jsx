@@ -6,7 +6,11 @@ export default function ReceiptModal({ order, onClose }) {
   if (!order) return null;
 
   const handlePrint = () => {
+    document.body.classList.add('printing-receipt');
     window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-receipt');
+    }, 1000);
   };
 
   const upiString = `upi://pay?pa=royalfeast@upi&pn=RoyalFeastRestaurant&am=${parseFloat(order.total).toFixed(2)}&cu=INR&tn=${order.bill_number}`;

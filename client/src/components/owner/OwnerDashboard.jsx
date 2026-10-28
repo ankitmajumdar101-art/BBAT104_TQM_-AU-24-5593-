@@ -36,7 +36,7 @@ export default function OwnerDashboard({ onLogout, initialSubTab = 'overview' })
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto', padding: '24px 20px' }}>
       {/* Owner Dashboard Sub-Navigation Tabs */}
-      <div style={{
+      <div className="no-print" style={{
         background: '#FFF',
         borderRadius: '16px',
         padding: '8px',

@@ -102,6 +102,33 @@ export default function OwnerSalesReports() {
 
   return (
     <div style={{ padding: '4px 0' }}>
+      {/* Printable Report Header */}
+      <div className="print-only" style={{
+        marginBottom: '24px',
+        borderBottom: '2px solid #0F172A',
+        paddingBottom: '16px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '900', color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '0.5px' }}>
+              ROYAL FEAST RESTAURANT
+            </h1>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#334155', margin: '0 0 6px 0' }}>
+              OFFICIAL SALES AUDIT REPORT
+            </h2>
+            <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
+              Period: <strong style={{ color: '#0F172A' }}>{period ? period.toUpperCase() : 'CUSTOM'}</strong> ({reportData?.dateRange?.startDate} to {reportData?.dateRange?.endDate})
+              {paymentMethod ? ` • Method: ${paymentMethod}` : ''}
+            </p>
+          </div>
+          <div style={{ textAlign: 'right', fontSize: '11px', color: '#64748B' }}>
+            <p style={{ margin: '0 0 3px 0', fontWeight: '800', color: '#0F172A' }}>ROLE: RESTAURANT OWNER</p>
+            <p style={{ margin: '0 0 3px 0' }}>Generated: {reportData?.generatedAt ? new Date(reportData.generatedAt).toLocaleString('en-IN') : new Date().toLocaleString('en-IN')}</p>
+            <p style={{ margin: 0, fontStyle: 'italic' }}>Zero-Tamper Financial Surveillance Audit</p>
+          </div>
+        </div>
+      </div>
+
       {/* Header and Controls */}
       <div style={{
         background: '#FFF',
@@ -139,7 +166,7 @@ export default function OwnerSalesReports() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div className="no-print" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <button
               onClick={handleExportCSV}
               disabled={!reportData}
@@ -199,7 +226,7 @@ export default function OwnerSalesReports() {
         </div>
 
         {/* Filter Toolbar */}
-        <div style={{
+        <div className="no-print" style={{
           marginTop: '20px',
           paddingTop: '16px',
           borderTop: '1px solid #F1F5F9',

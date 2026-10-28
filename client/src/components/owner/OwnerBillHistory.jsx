@@ -87,7 +87,11 @@ export default function OwnerBillHistory() {
   };
 
   const handlePrintModal = () => {
+    document.body.classList.add('printing-receipt');
     window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-receipt');
+    }, 1000);
   };
 
   return (
@@ -407,6 +411,7 @@ export default function OwnerBillHistory() {
           }}>
             {/* Close Button */}
             <button
+              className="no-print"
               onClick={() => setSelectedBill(null)}
               style={{
                 position: 'absolute',
@@ -428,7 +433,7 @@ export default function OwnerBillHistory() {
             </button>
 
             {/* Receipt Content Printable */}
-            <div id="receipt-print-area">
+            <div id="printable-receipt">
               <div style={{ textAlign: 'center', borderBottom: '1px dashed #CBD5E1', paddingBottom: '14px', marginBottom: '14px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', margin: '0 0 2px 0' }}>
                   {settings.restaurant_name || 'Royal Feast Restaurant'}
@@ -530,7 +535,7 @@ export default function OwnerBillHistory() {
             </div>
 
             {/* Print Action */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
+            <div className="no-print" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
               <button
                 onClick={() => setSelectedBill(null)}
                 style={{

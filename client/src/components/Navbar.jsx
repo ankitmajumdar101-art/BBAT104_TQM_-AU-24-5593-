@@ -51,7 +51,7 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
   };
 
   return (
-    <header style={{
+    <header className="no-print" style={{
       background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
       color: '#FFF',
       padding: '0 24px',

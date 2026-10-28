@@ -126,6 +126,29 @@ router.put('/:id', async (req, res, next) => {
 
     const targetUser = users[0];
 
+    // Security Safeguard: Administrators cannot deactivate the Restaurant Owner account or alter their role
+    if (targetUser.role === 'Owner' && req.user.role !== 'Owner') {
+      if (status === 'inactive') {
+        await logAudit({
+          userId: req.user.id,
+          username: req.user.username,
+          role: req.user.role,
+          action: 'UNAUTHORIZED_OWNER_DEACTIVATE_ATTEMPT',
+          details: `Blocked Admin ${req.user.username} attempt to deactivate Restaurant Owner account "${targetUser.username}".`
+        });
+        return res.status(403).json({
+          success: false,
+          message: 'Security safeguard: Administrators cannot deactivate the Restaurant Owner account.'
+        });
+      }
+      if (role && role !== 'Owner') {
+        return res.status(403).json({
+          success: false,
+          message: 'Security safeguard: Administrators cannot alter the role of the Restaurant Owner.'
+        });
+      }
+    }
+
     // Restriction: Cannot change own role
     if (targetUser.id === req.user.id && role && role !== req.user.role) {
       return res.status(400).json({ 
@@ -204,6 +227,14 @@ router.post('/:id/reset-password', async (req, res, next) => {
 
     const targetUser = users[0];
 
+    // Security Safeguard: Administrators cannot reset credentials for the Restaurant Owner account
+    if (targetUser.role === 'Owner' && req.user.role !== 'Owner') {
+      return res.status(403).json({
+        success: false,
+        message: 'Security safeguard: Administrators cannot reset credentials for the Restaurant Owner account. The Owner manages their own credentials.'
+      });
+    }
+
     // Generate or use provided temporary password
     const temporaryPwd = tempPassword && tempPassword.trim().length >= 6
       ? tempPassword.trim()
@@ -250,6 +281,21 @@ router.delete('/:id', async (req, res, next) => {
     }
 
     const targetUser = users[0];
+
+    // Security Safeguard: Administrators cannot delete the Restaurant Owner account
+    if (targetUser.role === 'Owner' && req.user.role !== 'Owner') {
+      await logAudit({
+        userId: req.user.id,
+        username: req.user.username,
+        role: req.user.role,
+        action: 'UNAUTHORIZED_OWNER_DELETE_ATTEMPT',
+        details: `Blocked Admin ${req.user.username} attempt to delete Restaurant Owner account "${targetUser.username}". Owner authorization required.`
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Security safeguard: Administrators cannot delete the Restaurant Owner account. The Owner is the proprietor of the restaurant and can only manage their own account.'
+      });
+    }
 
     // Guard: Cannot remove last admin
     if (targetUser.role === 'Admin') {

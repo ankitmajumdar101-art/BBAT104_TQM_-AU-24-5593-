@@ -94,6 +94,32 @@ export default function OwnerProfitLoss() {
 
   return (
     <div style={{ padding: '4px 0' }}>
+      {/* Printable Statement Header */}
+      <div className="print-only" style={{
+        marginBottom: '24px',
+        borderBottom: '2px solid #0F172A',
+        paddingBottom: '16px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '900', color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '0.5px' }}>
+              ROYAL FEAST RESTAURANT
+            </h1>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#334155', margin: '0 0 6px 0' }}>
+              STATEMENT OF ESTIMATED PROFIT & LOSS
+            </h2>
+            <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
+              Period: <strong style={{ color: '#0F172A' }}>{data?.dateRange?.startDate}</strong> to <strong style={{ color: '#0F172A' }}>{data?.dateRange?.endDate}</strong>
+            </p>
+          </div>
+          <div style={{ textAlign: 'right', fontSize: '11px', color: '#64748B' }}>
+            <p style={{ margin: '0 0 3px 0', fontWeight: '800', color: '#0F172A' }}>ROLE: RESTAURANT OWNER</p>
+            <p style={{ margin: '0 0 3px 0' }}>Generated: {new Date().toLocaleString('en-IN')}</p>
+            <p style={{ margin: 0, fontStyle: 'italic' }}>Financial Audit & Management Performance Report</p>
+          </div>
+        </div>
+      </div>
+
       {/* Top Banner */}
       <div style={{
         background: '#FFF',
@@ -130,7 +156,7 @@ export default function OwnerProfitLoss() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="no-print" style={{ display: 'flex', gap: '10px' }}>
           <button
             onClick={handleExportCSV}
             style={{
@@ -184,7 +210,7 @@ export default function OwnerProfitLoss() {
       </div>
 
       {/* Date Range Selector */}
-      <div style={{
+      <div className="no-print" style={{
         background: '#FFF',
         borderRadius: '16px',
         padding: '16px 20px',

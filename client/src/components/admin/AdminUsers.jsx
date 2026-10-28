@@ -168,6 +168,10 @@ export default function AdminUsers({ currentUser }) {
   };
 
   const handleToggleStatus = async (user) => {
+    if (user.role === 'Owner' && currentUser?.role !== 'Owner') {
+      alert('Security Policy: Administrators cannot deactivate the Restaurant Owner account. The Owner is the proprietor of the business.');
+      return;
+    }
     const nextStatus = user.status === 'active' ? 'inactive' : 'active';
     const confirmMsg = user.status === 'active' 
       ? `Are you sure you want to deactivate ${user.full_name || user.username}? They will not be able to log in.`
@@ -196,6 +200,10 @@ export default function AdminUsers({ currentUser }) {
   };
 
   const handleDeleteUser = async (user) => {
+    if (user.role === 'Owner' && currentUser?.role !== 'Owner') {
+      alert('Security Policy: Administrators cannot delete the Restaurant Owner account without explicit Owner permission. The Owner is the proprietor of the business.');
+      return;
+    }
     if (!window.confirm(`Are you sure you want to remove or deactivate user "${user.username}"?`)) return;
     try {
       const token = localStorage.getItem('token');
@@ -407,6 +415,10 @@ export default function AdminUsers({ currentUser }) {
               <tbody>
                 {users.map(u => {
                   const isCurrent = currentUser?.id === u.id;
+                  const isOwner = u.role === 'Owner';
+                  const isAdminViewer = currentUser?.role === 'Admin';
+                  const isOwnerProtected = isOwner && isAdminViewer;
+
                   return (
                     <tr key={u.id} style={{ borderBottom: '1px solid #F8FAFC' }}>
                       <td style={{ padding: '12px 10px', fontWeight: '700', color: '#0F172A' }}>
@@ -414,6 +426,11 @@ export default function AdminUsers({ currentUser }) {
                         {isCurrent && (
                           <span style={{ marginLeft: '6px', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: '#EFF6FF', color: '#1E40AF' }}>
                             (You)
+                          </span>
+                        )}
+                        {isOwner && (
+                          <span style={{ marginLeft: '6px', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: '#FEF3C7', color: '#92400E', fontWeight: '800' }}>
+                            👑 Proprietor
                           </span>
                         )}
                         {u.must_change_password ? (
@@ -447,7 +464,7 @@ export default function AdminUsers({ currentUser }) {
                       <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                         <button
                           onClick={() => handleToggleStatus(u)}
-                          disabled={isCurrent}
+                          disabled={isCurrent || isOwnerProtected}
                           style={{
                             padding: '3px 10px',
                             borderRadius: '999px',
@@ -456,11 +473,12 @@ export default function AdminUsers({ currentUser }) {
                             border: 'none',
                             background: u.status === 'active' ? '#ECFDF5' : '#FEF2F2',
                             color: u.status === 'active' ? '#059669' : '#DC2626',
-                            cursor: isCurrent ? 'not-allowed' : 'pointer'
+                            cursor: (isCurrent || isOwnerProtected) ? 'not-allowed' : 'pointer',
+                            opacity: isOwnerProtected ? 0.8 : 1
                           }}
-                          title={isCurrent ? 'Cannot alter own active status' : 'Click to toggle status'}
+                          title={isOwnerProtected ? '👑 Protected: Restaurant Owner account cannot be deactivated by Administrator' : (isCurrent ? 'Cannot alter own active status' : 'Click to toggle status')}
                         >
-                          {u.status === 'active' ? 'Active' : 'Inactive'}
+                          {isOwnerProtected ? '👑 Active' : (u.status === 'active' ? 'Active' : 'Inactive')}
                         </button>
                       </td>
                       <td style={{ padding: '12px 10px', textAlign: 'center' }}>
@@ -498,44 +516,50 @@ export default function AdminUsers({ currentUser }) {
 
                           <button
                             onClick={() => {
+                              if (isOwnerProtected) {
+                                alert('Security Policy: Administrators cannot reset credentials for the Restaurant Owner account. The Owner manages their own credentials.');
+                                return;
+                              }
                               setResetTargetUser(u);
                               setTempPasswordResult('');
                               setCustomTempPassword('');
                               setShowResetModal(true);
                             }}
+                            disabled={isOwnerProtected}
                             style={{
                               padding: '5px 10px',
                               borderRadius: '6px',
-                              background: '#FFFBEB',
-                              color: '#D97706',
-                              border: '1px solid #FCD34D',
+                              background: isOwnerProtected ? '#F1F5F9' : '#FFFBEB',
+                              color: isOwnerProtected ? '#94A3B8' : '#D97706',
+                              border: isOwnerProtected ? '1px solid #CBD5E1' : '1px solid #FCD34D',
                               fontSize: '12px',
                               fontWeight: '600',
-                              cursor: 'pointer',
+                              cursor: isOwnerProtected ? 'not-allowed' : 'pointer',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '4px'
+                              gap: '4px',
+                              opacity: isOwnerProtected ? 0.45 : 1
                             }}
-                            title="Initiate Temporary Password Reset"
+                            title={isOwnerProtected ? '👑 Protected: Owner credentials cannot be reset by Administrator' : 'Initiate Temporary Password Reset'}
                           >
                             <KeyRound size={13} /> Reset Pwd
                           </button>
 
                           <button
                             onClick={() => handleDeleteUser(u)}
-                            disabled={isCurrent}
+                            disabled={isCurrent || isOwnerProtected}
                             style={{
                               padding: '5px 10px',
                               borderRadius: '6px',
-                              background: '#FEF2F2',
-                              color: '#DC2626',
-                              border: '1px solid #FECACA',
+                              background: isOwnerProtected ? '#F1F5F9' : '#FEF2F2',
+                              color: isOwnerProtected ? '#94A3B8' : '#DC2626',
+                              border: isOwnerProtected ? '1px solid #CBD5E1' : '1px solid #FECACA',
                               fontSize: '12px',
                               fontWeight: '600',
-                              cursor: isCurrent ? 'not-allowed' : 'pointer',
-                              opacity: isCurrent ? 0.4 : 1
+                              cursor: (isCurrent || isOwnerProtected) ? 'not-allowed' : 'pointer',
+                              opacity: (isCurrent || isOwnerProtected) ? 0.35 : 1
                             }}
-                            title="Deactivate or Remove User"
+                            title={isOwnerProtected ? '👑 Protected: Restaurant Owner account cannot be deleted by Administrator' : 'Deactivate or Remove User'}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -704,9 +728,9 @@ export default function AdminUsers({ currentUser }) {
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '4px' }}>Role</label>
                   <select
                     value={editForm.role}
-                    disabled={currentUser?.id === editForm.id}
+                    disabled={currentUser?.id === editForm.id || (editForm.role === 'Owner' && currentUser?.role === 'Admin')}
                     onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', background: '#FFF' }}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', background: (currentUser?.id === editForm.id || (editForm.role === 'Owner' && currentUser?.role === 'Admin')) ? '#F1F5F9' : '#FFF' }}
                   >
                     {rolesList.map(r => (
                       <option key={r} value={r}>{r}</option>
@@ -715,19 +739,25 @@ export default function AdminUsers({ currentUser }) {
                   {currentUser?.id === editForm.id && (
                     <span style={{ fontSize: '11px', color: '#94A3B8' }}>Cannot change own role</span>
                   )}
+                  {editForm.role === 'Owner' && currentUser?.role === 'Admin' && (
+                    <span style={{ fontSize: '11px', color: '#92400E', fontWeight: '700' }}>👑 Protected Owner Role</span>
+                  )}
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '4px' }}>Status</label>
                   <select
                     value={editForm.status}
-                    disabled={currentUser?.id === editForm.id}
+                    disabled={currentUser?.id === editForm.id || (editForm.role === 'Owner' && currentUser?.role === 'Admin')}
                     onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', background: '#FFF' }}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', background: (currentUser?.id === editForm.id || (editForm.role === 'Owner' && currentUser?.role === 'Admin')) ? '#F1F5F9' : '#FFF' }}
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
+                  {editForm.role === 'Owner' && currentUser?.role === 'Admin' && (
+                    <span style={{ fontSize: '11px', color: '#92400E', fontWeight: '700' }}>👑 Protected Status</span>
+                  )}
                 </div>
               </div>
 
