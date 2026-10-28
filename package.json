@@ -1,0 +1,22 @@
+{
+  "name": "restaurant-billing-pos-root",
+  "version": "1.0.0",
+  "description": "Full-Stack Restaurant Billing & POS Web Application (TQM BBAT104)",
+  "scripts": {
+    "start": "cd api && npm start",
+    "api": "cd api && npm start",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "test:api": "cd api && node test-api.js"
+  },
+  "keywords": [
+    "restaurant-billing",
+    "pos",
+    "react",
+    "express",
+    "mysql",
+    "tqm"
+  ],
+  "author": "AU-24-5593",
+  "license": "ISC"
+}

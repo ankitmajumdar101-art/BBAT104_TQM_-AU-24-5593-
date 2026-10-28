@@ -8,7 +8,7 @@ echo    TQM Quality Goal: Q01 - Improve Reliability
 echo =======================================================
 echo.
 
-cd /d "%~dp0\RestaurantBillingSystem"
+cd /d "%~dp0"
 
 echo [1/3] Checking MySQL Database connection...
 "C:\xampp\mysql\bin\mysql.exe" -u root -e "USE restaurant_billing_db; SELECT 1;" >nul 2>&1
@@ -18,9 +18,9 @@ if %errorlevel% neq 0 (
     timeout /t 3 >nul
 )
 
-echo [2/3] Starting Express.js & React Web Application...
-cd server
-start "Restaurant Billing Server" cmd /k "npm start"
+echo [2/3] Starting Express.js Backend API & Serving React Web App...
+cd api
+start "Restaurant Billing API & Web App" cmd /k "npm start"
 
 timeout /t 2 >nul
 echo [3/3] Opening Web App in your browser...
