@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const errorHandler = require('./middleware/errorHandler');
@@ -18,7 +20,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: '*', // Allow React dev server or local network devices (waiter tablets)
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -35,7 +37,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Mount Routes
+// Mount API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', ordersRoutes);
@@ -44,6 +46,16 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/backup', backupRoutes);
 
+// Serve Production React Frontend
+const clientDist = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
+
 // Centralized Error Recovery Middleware
 app.use(errorHandler);
 
@@ -51,8 +63,8 @@ app.use(errorHandler);
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`====================================================`);
-    console.log(`🚀 Restaurant Billing Server running on port ${PORT}`);
-    console.log(`🌐 Base API URL: http://localhost:${PORT}/api`);
+    console.log(`🚀 Restaurant Billing Web App running on port ${PORT}`);
+    console.log(`🌐 Web App URL: http://localhost:${PORT}`);
     console.log(`🛡️  TQM Reliability Features Active (Audit & Error Logs)`);
     console.log(`====================================================`);
   });
