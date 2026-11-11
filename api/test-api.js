@@ -16,7 +16,7 @@ const server = app.listen(5099, async () => {
     const loginRes = await fetchJson('http://localhost:5099/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'cashier', password: 'cash123' })
+      body: JSON.stringify({ username: 'cashier', password: 'cashier123' })
     });
     console.log('Cashier Login:', loginRes.success, 'Token received:', !!loginRes.token);
     const token = loginRes.token;
