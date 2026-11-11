@@ -5,7 +5,8 @@ import {
   History, 
   FileText, 
   ChefHat, 
-  UserCircle 
+  UserCircle,
+  BellRing
 } from 'lucide-react';
 
 import CashierOverview from './CashierOverview';
@@ -15,6 +16,7 @@ import CashierDrafts from './CashierDrafts';
 import CashierKitchenOrders from './CashierKitchenOrders';
 import CashierProfile from './CashierProfile';
 import CashierReceiptModal from './CashierReceiptModal';
+import CashierWaiterQueue from './CashierWaiterQueue';
 
 export default function CashierDashboard({ currentUser, onLogout, initialSubTab = 'overview' }) {
   const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
@@ -26,6 +28,7 @@ export default function CashierDashboard({ currentUser, onLogout, initialSubTab 
 
   const sections = [
     { id: 'overview', label: 'Billing Overview', icon: BarChart3, desc: 'A. Shift Metrics' },
+    { id: 'waiter-orders', label: 'Waiter Orders Queue', icon: BellRing, desc: 'Incoming Table Orders' },
     { id: 'pos', label: 'Create Bill / POS', icon: Receipt, desc: 'B-F. New Invoices' },
     { id: 'history', label: 'My Bill History', icon: History, desc: 'G & I. History & Refunds' },
     { id: 'drafts', label: 'Saved Drafts', icon: FileText, desc: 'C. Unfinalized Orders' },
@@ -116,6 +119,12 @@ export default function CashierDashboard({ currentUser, onLogout, initialSubTab 
           <CashierOverview
             onNavigate={(tab) => setActiveSubTab(tab)}
             onReprintOrder={handleReprintOrder}
+          />
+        )}
+
+        {activeSubTab === 'waiter-orders' && (
+          <CashierWaiterQueue
+            onBillFinalized={handleBillFinalized}
           />
         )}
 

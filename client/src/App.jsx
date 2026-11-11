@@ -5,6 +5,7 @@ import OwnerDashboard from './components/owner/OwnerDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import CashierDashboard from './components/cashier/CashierDashboard';
 import KitchenDashboard from './components/kitchen/KitchenDashboard';
+import WaiterDashboard from './components/waiter/WaiterDashboard';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -32,6 +33,8 @@ export default function App() {
           setActiveTab('cashier');
         } else if (parsedUser.role === 'Kitchen Staff') {
           setActiveTab('kitchen');
+        } else if (parsedUser.role === 'Waiter') {
+          setActiveTab('waiter');
         } else {
           setActiveTab('overview');
         }
@@ -56,6 +59,8 @@ export default function App() {
       setActiveTab('cashier');
     } else if (loggedInUser.role === 'Kitchen Staff') {
       setActiveTab('kitchen');
+    } else if (loggedInUser.role === 'Waiter') {
+      setActiveTab('waiter');
     } else {
       setActiveTab('overview');
     }
@@ -84,6 +89,7 @@ export default function App() {
   const isAdmin = user.role === 'Admin';
   const isCashier = user.role === 'Cashier';
   const isKitchen = user.role === 'Kitchen Staff';
+  const isWaiter = user.role === 'Waiter';
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
@@ -103,7 +109,9 @@ export default function App() {
 
         {isKitchen && <KitchenDashboard currentUser={user} onLogout={handleLogout} />}
 
-        {!isOwner && !isAdmin && !isCashier && !isKitchen && (
+        {isWaiter && <WaiterDashboard currentUser={user} onLogout={handleLogout} />}
+
+        {!isOwner && !isAdmin && !isCashier && !isKitchen && !isWaiter && (
           <div style={{ padding: '32px', maxWidth: '800px', margin: '40px auto', textAlign: 'center', background: '#FFF', borderRadius: '16px' }}>
             <h2 style={{ color: '#0F172A' }}>Account Setup Completed</h2>
             <p style={{ color: '#64748B' }}>Please contact an administrator to review your assigned system role.</p>

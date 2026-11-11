@@ -14,21 +14,22 @@
 | **Roll Number / Section** | 2410301003 / Section A |
 | **Institution** | Amrapali University, Haldwani |
 | **Academic Session** | 2026–2027 (Reviews 1 & 2) |
-| **Version / Status** | Version 2.0 (Production Verified) |
+| **Version / Status** | Version 2.2 (Waiter Dashboard & Table Sitting Integrated) |
 
 ---
 
 ## 1. Introduction & Executive Summary
 
 ### 1.1 Purpose
-This Software Requirements Specification (SRS) defines the functional, non-functional, security, and quality requirements for the **Restaurant Billing & Surveillance System**. The system is engineered to solve core operational vulnerabilities in traditional manual restaurant billing—such as mathematical calculation discrepancies, untracked order voids, cashier price tampering, unauthorized account modifications, and lack of business visibility for restaurant proprietors.
+This Software Requirements Specification (SRS) defines the functional, non-functional, security, and quality requirements for the **Restaurant Billing & Surveillance System**. The system is engineered to solve core operational vulnerabilities in traditional manual restaurant billing—such as mathematical calculation discrepancies, untracked order voids, cashier price tampering, unauthorized account modifications, lack of table seating status tracking, and lack of business visibility for restaurant proprietors.
 
 ### 1.2 Core Quality Mandate (TQM Goal Q01)
 Under the **Total Quality Management (TQM) Goal Q01: Improve Reliability**, this application establishes proactive process control mechanisms (Poka-Yoke) rather than relying on reactive post-billing inspection. The system guarantees:
 * **Calculation Precision:** Zero mathematical discrepancies on customer invoices via server-enforced decimal arithmetic.
-* **Non-Repudiation & Traceability:** Immutable audit logging of every login, menu change, billing event, and administrative action.
-* **Role-Based Access Control (RBAC):** Strict boundaries separating Executive Surveillance (Owner), Operational Configuration (Admin), Point-of-Sale Billing (Cashier), and Food Preparation (Kitchen Staff).
+* **Non-Repudiation & Traceability:** Immutable audit logging of every login, menu change, billing event, waiter order, kitchen ticket update, and administrative action.
+* **Role-Based Access Control (RBAC):** Strict boundaries separating Executive Surveillance (Owner), Operational Configuration (Admin), Point-of-Sale Billing (Cashier), Floor & Table Service (Waiter), and Food Preparation (Kitchen Staff).
 * **Owner Protection Invariant:** Structural access control barriers preventing administrative accounts from deleting, deactivating, or demoting the Restaurant Owner account.
+* **Closed-Loop Workflow Coordination:** End-to-end synchronized order progression: Waiter order taking $\longrightarrow$ Cashier bill calculation $\longrightarrow$ Kitchen Chef cooking $\longrightarrow$ Real-time Waiter ready notification $\longrightarrow$ Table food delivery.
 * **Disaster Recovery:** Point-in-time database snapshots and automated backups ensuring business continuity.
 
 ### 1.3 Scope of the Application
@@ -36,8 +37,9 @@ The application provides an end-to-end full-stack web platform comprising:
 1. **Multi-Role Authentication:** Encrypted credential verification (BCrypt + JWT) routing users to dedicated portals.
 2. **Executive Owner Portal:** Business KPI dashboards, sales reports (daily/weekly/monthly/yearly), operating expense logging, real-time Operating Profit & Loss (P&L) statements, and read-only bill surveillance.
 3. **Operational Admin Portal:** Staff account lifecycle management, menu catalog CRUD with live stock availability toggles, on-demand MySQL database backup/restore, system error logs, and security audit exploration.
-4. **Cashier POS Billing Terminal:** High-speed touch/keyboard bill creation, table selection, automatic 5% GST tax calculation (2.5% CGST + 2.5% SGST), discount validation, Cash settlement with change due calculation, dynamic UPI QR code generator, and 80mm thermal receipt printing.
-5. **Kitchen Display System (KDS):** Real-time order preparation queue displaying dishes, quantities, and cooking notes with strictly controlled workflow status transitions (`New` → `Preparing` → `Ready for Service`), without exposing customer financial data.
+4. **Cashier POS Billing Terminal & Waiter Billing Queue:** High-speed touch/keyboard bill creation, incoming waiter orders queue calculation, automatic 5% GST tax calculation (2.5% CGST + 2.5% SGST), discount validation, Cash/Card/UPI settlement, and 80mm thermal receipt printing.
+5. **Waiter Service & Table Management Station:** Real-time customer table sitting system (Available, Seated, Order Sent, Bill Ready, Food Ready, Served), menu catalog with dish prices and promotional discounts, table order submission, bill delivery to customer, and kitchen ready alerts.
+6. **Kitchen Display System (KDS):** Real-time order preparation queue displaying dishes, quantities, waiter attribution, and cooking notes with strictly controlled workflow status transitions (`New` → `Preparing` → `Ready for Service`), without exposing customer financial data.
 
 ---
 
@@ -46,31 +48,31 @@ The application provides an end-to-end full-stack web platform comprising:
 ### 2.1 Decoupled 4-Tier Architecture
 The system enforces a strict separation of concerns across four distinct tiers:
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                 TIER 1: CLIENT PRESENTATION                 │
-│ React 18 SPA (Vite) • Role Dashboards • POS Terminal • KDS │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ HTTPS / JSON / Bearer JWT
-┌──────────────────────────────▼──────────────────────────────┐
-│             TIER 2: API GATEWAY & ROUTING LAYER             │
-│ Express.js REST API • JWT Auth Guards • Route RBAC Barriers │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ Controller Method Dispatch
-┌──────────────────────────────▼──────────────────────────────┐
-│          TIER 3: BUSINESS RULES & SECURITY SERVICES         │
-│ Poka-Yoke Validation • GST Tax Calculator • Audit Logger    │
-│ Atomic ACID Transactions • MySQL Dump Backup Engine         │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ SQL Queries / Connection Pool
-┌──────────────────────────────▼──────────────────────────────┐
-│           TIER 4: RELATIONAL DATABASE PERSISTENCE           │
-│ MySQL / MariaDB • 10 Normalized Tables • Referential Integrity│
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       TIER 1: CLIENT PRESENTATION                       │
+│ React 18 SPA (Vite) • Role Dashboards • POS Terminal • Waiter UI • KDS │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ HTTPS / JSON / Bearer JWT
+┌────────────────────────────────────▼────────────────────────────────────┐
+│                   TIER 2: API GATEWAY & ROUTING LAYER                   │
+│ Express.js REST API • JWT Auth Guards • Route RBAC Security Barriers    │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ Controller Method Dispatch
+┌────────────────────────────────────▼────────────────────────────────────┐
+│                TIER 3: BUSINESS RULES & SECURITY SERVICES               │
+│ Poka-Yoke Validation • GST Tax Calculator • Audit Logger • Table Manager│
+│ Atomic ACID Transactions • MySQL Dump Backup Engine                     │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ SQL Queries / Connection Pool
+┌────────────────────────────────────▼────────────────────────────────────┐
+│                 TIER 4: RELATIONAL DATABASE PERSISTENCE                 │
+│ MySQL / MariaDB • 11 Normalized Tables • Foreign Keys & Constraints     │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 Golden Architectural Invariant
 > **The presentation layer must never execute SQL queries or directly access the database.**  
-All business rules, discount limits, GST tax percentages (2.5% CGST + 2.5% SGST), and authorization checks reside exclusively in backend Express controllers and middleware.
+All business rules, table state updates, discount limits, GST tax percentages (2.5% CGST + 2.5% SGST), and authorization checks reside exclusively in backend Express controllers and middleware.
 
 ---
 
@@ -82,29 +84,30 @@ All business rules, discount limits, GST tax percentages (2.5% CGST + 2.5% SGST)
 | :--- | :--- | :--- |
 | **1. Restaurant Owner** | Executive surveillance of business performance, sales trends, expenses, and net profit. | Read-only bill surveillance. Strictly prohibited from editing or voiding daily billing transactions. |
 | **2. Administrator** | Day-to-day operational administration of staff accounts, menu catalog, backups, and audit logs. | Operational management only. Strictly prohibited from deleting, deactivating, or demoting the Owner account. |
-| **3. Cashier** | High-speed order creation, table billing, tax & discount calculation, payment settlement, and thermal receipt printing. | Front-desk billing only. Prohibited from changing menu pricing, managing staff accounts, or modifying finalized bills. |
-| **4. Kitchen Staff (Chef)** | Timely preparation of ordered food items via Kitchen Display System (KDS). | Kitchen queue management only. Screen strictly hides customer pricing, discounts, and payment information. |
-| **5. Dining Customer / Guest** | Receives fast service, accurate GST tax itemization, transparent discounts, and dynamic UPI QR payments. | End beneficiary of billing reliability and transparent receipt copies. |
-| **6. Statutory / Tax Auditor** | Verifies legal tax compliance (5% GST), business audit trails, and financial record immutability. | External stakeholder auditing non-repudiation records and GSTIN compliance. |
+| **3. Cashier** | High-speed bill creation, waiter order calculation, tax & discount application, payment settlement, and thermal receipt printing. | Front-desk billing only. Prohibited from changing menu pricing, managing staff accounts, or modifying finalized bills. |
+| **4. Floor Waiter** | Customer table seating management, menu browsing with active discounts, order taking and submission to cashier, providing bills to guests, and serving food. | Floor table service & order creation only. Prohibited from configuring menu pricing, approving refunds, or managing user accounts. |
+| **5. Kitchen Staff (Chef)** | Timely preparation of ordered food items via Kitchen Display System (KDS) and notifying waiters when food is ready. | Kitchen queue management only. Screen strictly hides customer pricing, discounts, and payment information. |
+| **6. Dining Customer / Guest** | Receives fast service, accurate GST tax itemization, transparent discounts, and dynamic UPI QR payments. | End beneficiary of billing reliability and transparent receipt copies. |
+| **7. Statutory / Tax Auditor** | Verifies legal tax compliance (5% GST), business audit trails, and financial record immutability. | External stakeholder auditing non-repudiation records and GSTIN compliance. |
 
 ### 3.2 SIPOC Process Model
 
 ```text
   [S] SUPPLIERS         [I] INPUTS            [P] PROCESS            [O] OUTPUTS           [C] CUSTOMERS
 ┌────────────────┐    ┌────────────────┐    ┌─────────────────┐    ┌────────────────┐    ┌────────────────┐
-│• Dining Guests │    │• Table Number  │    │ 1. Order Entry  │    │• 80mm GST Tax  │    │• Dining Guests │
-│• Kitchen Store │───>│• Menu Items    │───>│ 2. Poka-Yoke Val│───>│   Invoice      │───>│• Cashiers      │
-│• Cashier Desk  │    │• Item Rates    │    │ 3. KDS Dispatch │    │• KDS Prep Slip │    │• Kitchen Chefs │
-│• Restaurant    │    │• Discounts     │    │ 4. Tax/Calc Math│    │• Realized Sales│    │• Admin / Owner │
-│  Management    │    │• Credentials   │    │ 5. Settlement   │    │• Immutable Log │    │• Tax Authority │
+│• Dining Guests │    │• Table Number  │    │ 1. Table Seating│    │• 80mm GST Tax  │    │• Dining Guests │
+│• Kitchen Store │───>│• Customer Info │───>│ 2. Order Intake │───>│   Invoice      │───>│• Cashiers      │
+│• Cashier Desk  │    │• Menu Items    │    │ 3. Cashier Bill │    │• KDS Prep Slip │    │• Kitchen Chefs │
+│• Floor Waiters │    │• Item Rates    │    │ 4. Kitchen Prep │    │• Ready Alerts  │    │• Floor Waiters │
+│• Management    │    │• Discounts     │    │ 5. Table Service│    │• Immutable Log │    │• Admin / Owner │
 └────────────────┘    └────────────────┘    └─────────────────┘    └────────────────┘    └────────────────┘
 ```
 
-* **Suppliers (S):** Dining guests placing orders, kitchen inventory supplying ingredients, cashier operating the terminal, and management configuring menu items.
-* **Inputs (I):** Table numbers, active menu items, customer contact, quantities, authorized discount rates, and role credentials.
-* **Process (P):** POS Order Intake → Poka-Yoke Item Validation → Real-Time KDS Dispatch → Server-Side Tax/Discount Math → Payment Settlement → Receipt Printing & Audit Logging.
-* **Outputs (O):** Legally compliant 80mm GST tax receipts, real-time KDS preparation tickets, updated inventory availability, realized revenue records, and immutable audit logs.
-* **Customers (C):** Guests receiving meals and itemized bills, cashiers receiving payment confirmation, kitchen chefs receiving dish tickets, and the restaurant owner receiving verified financial intelligence.
+* **Suppliers (S):** Dining guests, floor waiters taking orders, cashier calculating bills, kitchen staff preparing dishes, and management configuring menus.
+* **Inputs (I):** Table seating numbers, customer details, selected dishes with prices & discounts, cooking instructions, payment methods, and role credentials.
+* **Process (P):** Table Seating Assignment $\longrightarrow$ Waiter Order Intake $\longrightarrow$ Dispatch to Cashier $\longrightarrow$ Cashier Bill Calculation $\longrightarrow$ KDS Kitchen Preparation $\longrightarrow$ Chef Ready Alert $\longrightarrow$ Waiter Food Delivery $\longrightarrow$ Table Clearing.
+* **Outputs (O):** Legally compliant 80mm GST tax receipts, real-time KDS tickets with waiter attribution, live table status indicators, realized sales records, and immutable audit logs.
+* **Customers (C):** Guests enjoying meals, waiters receiving ready alerts, cashiers receiving payment, kitchen chefs receiving food slips, and the owner monitoring business health.
 
 ---
 
@@ -139,65 +142,82 @@ All business rules, discount limits, GST tax percentages (2.5% CGST + 2.5% SGST)
 
 ---
 
-### 4.2 Stakeholder 2 — Administrator (Admin) Requirements
+### 4.2 Stakeholder 2 — Administrator Requirements
 
-#### A. Administrative Overview & Operations
-* **SRS-ADM-01:** The system shall display operational summaries: active staff accounts, active menu items, total bills created today, and recent backup status.
-* **SRS-ADM-02:** Overview widgets shall link directly to User Management, Menu Management, Database Backups, Audit Logs, and Error Logs.
+#### A. Staff Account Lifecycle Management
+* **SRS-ADM-01:** The system shall provide user management allowing the Admin to create, view, update, deactivate, and reset passwords for Cashier, Waiter, and Kitchen Staff accounts.
+* **SRS-ADM-02:** **Owner Protection Invariant (Security Poka-Yoke):** The system shall programmatically prevent any administrator from deleting, deactivating, or demoting the Restaurant Owner account. Any such attempt must return `HTTP 403 Forbidden` and record a security violation in `audit_logs`.
 
-#### B. Staff User Management & Access Control
-* **SRS-ADM-03:** The Admin shall create, update, activate, and deactivate accounts for Cashier and Kitchen Staff roles.
-* **SRS-ADM-04:** The system shall support secure temporary password generation and enforce a `must_change_password` challenge upon next login.
-* **SRS-ADM-05:** **Owner Protection Invariant (Crucial Security Barrier):**  
-  * The Admin is strictly blocked from deleting an account with `role === 'Owner'` (returns `HTTP 403 Forbidden`).
-  * The Admin is strictly blocked from deactivating an Owner account or altering an Owner's role.
-  * The Admin is strictly blocked from initiating force-resets on the Owner's password.
-  * In the UI, Owner records display protected badges (`👑 Proprietor`), and action buttons are disabled.
-* **SRS-ADM-06:** **Last Administrator Guard:** The system shall prevent an Admin from deleting or deactivating the last remaining active Administrator account.
+#### B. Menu Catalog Management
+* **SRS-ADM-03:** The system shall provide full CRUD management for food menu categories and items.
+* **SRS-ADM-04:** The system shall support setting promotional discount percentages per menu item (`discount_percent`).
+* **SRS-ADM-05:** The system shall provide a real-time availability toggle (`available`) for each dish, instantly synchronizing across POS and Waiter terminals.
 
-#### C. Menu Item & Catalog Management
-* **SRS-ADM-07:** The Admin shall create, edit, and delete food items with name, category, price, and description.
-* **SRS-ADM-08:** The Admin shall toggle item availability (`is_available: 1/0`) in real time, immediately affecting Cashier POS billing options.
-* **SRS-ADM-09:** All menu modifications shall be recorded in the system audit log with previous and updated values.
+#### C. Database Backup & Disaster Recovery
+* **SRS-ADM-06:** The system shall allow the Admin to generate full MySQL database backup snapshots on demand.
+* **SRS-ADM-07:** The system shall verify generated backup file sizes and log execution outcomes to `backup_logs`.
 
-#### D. Database Backup, Recovery & Audit Logging
-* **SRS-ADM-10:** The system shall generate on-demand, timestamped MySQL database dumps saved to the `backups/` archive.
-* **SRS-ADM-11:** The Admin shall inspect centralized `audit_logs` capturing user ID, username, role, IP address, action, and timestamp.
-* **SRS-ADM-12:** The Admin shall review `error_logs` with error messages, call stack traces, and context details for system maintenance.
+#### D. System Security Audit Exploration
+* **SRS-ADM-08:** The system shall provide an immutable audit trail interface displaying all user actions, logins, menu updates, billing events, and security violations with timestamps and IP addresses.
 
 ---
 
 ### 4.3 Stakeholder 3 — Cashier Requirements
 
 #### A. POS Billing Terminal
-* **SRS-CSH-01:** The Cashier shall select dining table numbers (1–30), search active dishes, filter by food categories, and add items to the active bill cart.
-* **SRS-CSH-02:** The Cashier shall increase or decrease quantities and remove items from unfinalized orders.
-* **SRS-CSH-03:** **Poka-Yoke Availability Guard:** Unavailable items (`is_available = 0`) shall be disabled and blocked from cart insertion.
+* **SRS-CSH-01:** The system shall provide a rapid POS bill generation terminal with table selection, customer details, and dish search.
+* **SRS-CSH-02:** Subtotals, 5% GST tax (2.5% CGST + 2.5% SGST), authorized discounts, and grand totals shall be calculated exclusively on the backend server.
+* **SRS-CSH-03:** The system shall support Cash, Card, and UPI payment methods with change due calculation and dynamic UPI payment QR codes.
 
-#### B. Server-Enforced Financial Calculations
-* **SRS-CSH-04:** The system shall automatically calculate the subtotal, apply validated discount vouchers (percentage or fixed amount), and calculate statutory 5% GST (2.5% CGST + 2.5% SGST).
-* **SRS-CSH-05:** All final amounts must be recalculated and verified on the server to prevent client-side price manipulation.
-
-#### C. Payment Settlement & Thermal Invoicing
-* **SRS-CSH-06:** The system shall support Cash payments with automatic change due calculation:  
-  $$\text{Change Due} = \text{Amount Received} - \text{Grand Total}$$
-* **SRS-CSH-07:** The system shall generate dynamic, scannable UPI QR codes on the screen and receipt encoding the exact bill number and payable amount.
-* **SRS-CSH-08:** The system shall print standard 80mm thermal receipts rendered via an isolated print engine preventing modal clipping and dark background artifacts.
-* **SRS-CSH-09:** Any reprint of a finalized bill shall display a bold watermark: `*** DUPLICATE COPY / REPRINT ***`.
+#### B. Waiter Incoming Orders Billing Queue
+* **SRS-CSH-04:** The system shall provide a dedicated **Waiter Orders Queue** displaying incoming table orders submitted by floor waiters with status `Pending_Cashier`.
+* **SRS-CSH-05:** The Cashier shall be able to review ordered items, apply payment methods, calculate GST and discounts, and finalize the bill.
+* **SRS-CSH-06:** Upon finalization by Cashier, the system shall transition the order to `Completed`, forward the food ticket to Kitchen Chef (`kitchen_status: 'New'`), and flag the bill as ready for Waiter delivery.
 
 ---
 
-### 4.4 Stakeholder 4 — Kitchen Staff (Chef) Requirements
+### 4.4 Stakeholder 4 — Floor Waiter Requirements
+
+#### A. Customer Table Sitting System
+* **SRS-WTR-01:** The system shall provide an interactive Table Seating Map displaying all restaurant tables with seating capacity and live operational status:
+  * 🟢 **Available:** Table is clean and ready for seating.
+  * 🟡 **Seated:** Guests are seated and reviewing the menu.
+  * 🔵 **Order Placed:** Waiter has submitted order to Cashier for billing calculation.
+  * 🟣 **Bill Ready:** Cashier has finalized bill; ready for waiter to print/hand to customer.
+  * 🟠 **Food Preparing:** Kitchen Chef is actively preparing food.
+  * 🟢 **Food Ready:** Kitchen Chef has completed cooking; blinking ready alert.
+  * ✅ **Served / Dining:** Dishes delivered to table; guests dining.
+* **SRS-WTR-02:** The Waiter shall be able to assign/seat guests at an available table by recording customer name, phone number, and guest count.
+* **SRS-WTR-03:** The Waiter shall be able to clear/free a table once dining is concluded, resetting the table to `Available`.
+
+#### B. Menu with Real-Time Prices & Discounts
+* **SRS-WTR-04:** The system shall present the full restaurant menu categorized by Starters, Main Course, Fast Food, Beverages, Desserts, and Chef Specials.
+* **SRS-WTR-05:** Each dish shall prominently display its standard unit price, promotional discount percentage badge (e.g. `10% OFF`), effective discounted price, and guest savings amount.
+* **SRS-WTR-06:** Only dishes marked `available = 1` by kitchen/management shall be selectable for order entry.
+
+#### C. Order Taking & Dispatch to Cashier
+* **SRS-WTR-07:** The Waiter shall select items for a specific seated table, adjust quantities, add special cooking notes, and submit the order.
+* **SRS-WTR-08:** Submitting the order sets `order_status = 'Pending_Cashier'` and `kitchen_status = 'Pending_Bill'`, transmitting the ticket to the Cashier queue without exposing kitchen preparation until billed.
+
+#### D. Bill Receipt Delivery & Food Service
+* **SRS-WTR-09:** When the Cashier calculates the bill, the Waiter dashboard shall display a "Bill Ready" notification allowing the waiter to inspect and print the 80mm thermal receipt for the customer.
+* **SRS-WTR-10:** When the Kitchen Chef marks food `Ready`, the Waiter dashboard shall display a high-priority "Food Ready" alert banner.
+* **SRS-WTR-11:** The Waiter shall deliver dishes to the table and mark the order as `Served`, updating the table status to `Served`.
+
+---
+
+### 4.5 Stakeholder 5 — Kitchen Staff (Chef) Requirements
 
 #### A. Kitchen Display System (KDS)
 * **SRS-KIT-01:** The system shall provide a dedicated KDS screen displaying incoming customer orders in real time.
-* **SRS-KIT-02:** Kitchen cards shall show order number, table number, ordered dishes, quantities, order timestamp, and cooking notes.
+* **SRS-KIT-02:** Kitchen cards shall show order number, table number, assigned floor waiter name, ordered dishes, quantities, order timestamp, and special cooking notes.
 * **SRS-KIT-03:** **Financial Information Hiding:** The KDS interface shall strictly hide item prices, subtotals, discounts, taxes, customer phone numbers, and payment modes.
 
 #### B. Finite Workflow State Transitions
 * **SRS-KIT-04:** Kitchen Staff shall transition order status strictly through authorized states:  
-  $$\text{New (Pending)} \longrightarrow \text{Preparing} \longrightarrow \text{Ready for Service}$$
-* **SRS-KIT-05:** **State Invariant Guard:** The system shall prevent invalid reverse transitions (e.g., an order marked `Ready` cannot be reverted to `New` via standard buttons).
+  $$\text{New (Billed by Cashier)} \longrightarrow \text{Preparing} \longrightarrow \text{Ready for Service}$$
+* **SRS-KIT-05:** Transitioning an order to `Ready` shall automatically notify the assigned Floor Waiter to collect and deliver dishes.
+* **SRS-KIT-06:** **State Invariant Guard:** The system shall prevent unauthorized reverse status transitions.
 
 ---
 
@@ -210,16 +230,16 @@ In compliance with TQM Quality Goal Q01, every quality commitment is mapped to a
 | **Billing Accuracy** | Discrepancies between item rates, quantities, and bill grand total | **0 Discrepancies (100% Precision)** | Automated server-side unit tests and decimal arithmetic validation |
 | **GST Tax Compliance** | Precision of 2.5% CGST and 2.5% SGST itemization on all saved bills | **100% Statutory Compliance** | Automated verification against Indian GST statutory rules |
 | **RBAC Security Invariant** | Unauthorized attempts by Admin to delete/demote Owner | **0 Allowed (100% Blocked)** | Route-level JWT RBAC middleware returning `HTTP 403 Forbidden` |
-| **Audit Traceability** | Critical events (logins, voids, resets, backups) logged with timestamp | **100% Event Coverage** | Continuous relational insertion into MySQL `audit_logs` |
-| **KDS Dispatch Latency** | Time delay between cashier checkout and KDS screen queue appearance | **< 1.5 Seconds** | Optimized database indexing and lightweight REST fetch polling |
-| **Disaster Recovery** | Verifiability and integrity of database backup SQL dump files | **100% Backup Verifiability** | Automated point-in-time SQL dump creation with file size check |
-| **Poka-Yoke Input Protection** | Prevention of negative prices, empty item names, and invalid inputs | **100% Blocked at Entry** | Express validator middleware and database schema constraints |
+| **Waiter Handoff Integrity** | Synchronization across Waiter $\to$ Cashier $\to$ Kitchen $\to$ Customer | **100% Ticket Traceability** | Automated integration tests tracking order lifecycle states |
+| **Audit Traceability** | Critical events (logins, voids, resets, backups, waiter orders) logged with timestamp | **100% Event Coverage** | Continuous relational insertion into MySQL `audit_logs` |
+| **KDS Dispatch Latency** | Time delay between cashier billing and KDS screen queue appearance | **< 1.5 Seconds** | Optimized database indexing and lightweight REST fetch polling |
+| **Poka-Yoke Table Control** | Prevention of seating customers on already occupied tables | **100% Blocked at Entry** | Backend table status checks returning `HTTP 400` on conflicts |
 
 ---
 
 ## 6. Database Schema & Entity Relationship Model
 
-The system utilizes a relational database (`restaurant_billing_db`) running on MySQL / MariaDB comprising 10 normalized tables:
+The system utilizes a relational database (`restaurant_billing_db`) running on MySQL / MariaDB comprising 11 normalized tables:
 
 ```text
 ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
@@ -229,28 +249,47 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 │     username    │       │     name        │<──────│ FK  category_id │
 │     password    │       │     description │       │     name        │
 │     role        │       └─────────────────┘       │     price       │
-│     status      │                                 │     is_available│
-└────────┬────────┘                                 └────────┬────────┘
-         │                                                   │
-         │ 1:N (created_by)                                  │ 1:N
-         ▼                                                   ▼
-┌─────────────────┐       1:N                       ┌─────────────────┐
-│     orders      │────────────────────────────────>│   order_items   │
-├─────────────────┤                                 ├─────────────────┤
-│ PK  id          │                                 │ PK  id          │
-│     bill_number │                                 │ FK  order_id    │
-│     table_num   │                                 │ FK  menu_item_id│
-│     subtotal    │                                 │     item_name   │
-│     tax_amount  │                                 │     price       │
-│     discount    │                                 │     quantity    │
-│     total       │                                 │     subtotal    │
-│     payment_mthd│                                 └─────────────────┘
+│     status      │                                 │     discount_pct│
+└────────┬────────┘                                 │     available   │
+         │                                          └────────┬────────┘
+         │ 1:N (created_by / waiter_id)                      │
+         ▼                                                   │ 1:N
+┌─────────────────┐       1:N                                ▼
+│     orders      │────────────────────────────────>┌─────────────────┐
+├─────────────────┤                                 │   order_items   │
+│ PK  id          │                                 ├─────────────────┤
+│     bill_number │                                 │ PK  id          │
+│     table_num   │                                 │ FK  order_id    │
+│     waiter_id   │                                 │ FK  menu_item_id│
+│     waiter_name │                                 │     item_name   │
+│     subtotal    │                                 │     price       │
+│     tax_amount  │                                 │     quantity    │
+│     discount    │                                 │     subtotal    │
+│     total       │                                 └─────────────────┘
+│     payment_mthd│
 │     order_status│
-└─────────────────┘
+│     kitchen_stat│
+└────────┬────────┘
          │
          ├─── 1:N ───> [audit_logs]          (user_id, action, details, timestamp)
          ├─── 1:N ───> [backup_logs]         (file_name, file_size, status, created_at)
          └─── 1:N ───> [expenses]            (category, amount, expense_date, recorded_by)
+
+  Floor Table & Operational State Tracking Table:
+┌─────────────────────┐
+│  restaurant_tables  │
+├─────────────────────┤
+│ PK  id              │
+│     table_number    │
+│     capacity        │
+│     status          │  (Available, Seated, Order Placed, Bill Ready, Food Ready, Served)
+│     customer_name   │
+│     customer_phone  │
+│     guests_count    │
+│ FK  current_order_id│
+│ FK  assigned_waiter │
+│     seated_at       │
+└─────────────────────┘
 
   Additional Independent Surveillance Tables:
   • [restaurant_settings] : (setting_key, setting_value) [GSTIN, Store Details, Tax Rates]
@@ -270,10 +309,6 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 * **Token Authentication:** Stateless JSON Web Tokens (JWT) containing user ID and role are required in the `Authorization: Bearer <token>` header for all protected API endpoints.
 * **Input Sanitization:** Parameterized SQL queries via `mysql2/promise` eliminate SQL injection vulnerabilities.
 
-### 7.3 Portability & Deployment
-* **Client Compatibility:** Runs in all modern web browsers (Google Chrome, Microsoft Edge, Mozilla Firefox) with zero client-side installation.
-* **Platform Independence:** Runs on Windows, macOS, or Linux using standard Node.js and MySQL runtime environments.
-
 ---
 
 ## 8. Verification & Traceability Matrix
@@ -284,14 +319,18 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 | **SRS-OWN-05 to 08** | `client/src/components/owner/OwnerSalesReports.jsx` | Verified CSV export and letterhead print formatting |
 | **SRS-OWN-09 to 12** | `client/src/components/owner/OwnerProfitLoss.jsx` | Mathematical verification of Sales minus Expenses |
 | **SRS-OWN-13 to 14** | `client/src/components/owner/OwnerBillHistory.jsx` | Read-only audit verification; no edit/delete endpoints |
-| **SRS-ADM-03 to 06** | `api/routes/users.js` & `AdminUsers.jsx` | Automated test asserting `HTTP 403` on Owner delete |
-| **SRS-ADM-07 to 09** | `api/routes/menu.js` & `AdminMenu.jsx` | Menu CRUD testing with real-time stock toggling |
-| **SRS-ADM-10 to 12** | `api/routes/backup.js` & `AuditLogs.jsx` | Execution test verifying generated `.sql` backup files |
-| **SRS-CSH-01 to 05** | `client/src/components/POSBilling.jsx` | Poka-Yoke cart test blocking out-of-stock items |
-| **SRS-CSH-06 to 09** | `client/src/utils/printReceipt.js` | 80mm thermal receipt iframe printing verification |
-| **SRS-KIT-01 to 05** | `client/src/components/kitchen/KitchenKDS.jsx` | Live queue state transition test (`New` → `Prep` → `Ready`) |
+| **SRS-ADM-01 to 02** | `api/routes/users.js` & `AdminUsers.jsx` | Automated test asserting `HTTP 403` on Owner delete |
+| **SRS-ADM-03 to 05** | `api/routes/menu.js` & `AdminMenu.jsx` | Menu CRUD testing with real-time stock & discount toggling |
+| **SRS-ADM-06 to 08** | `api/routes/backup.js` & `AuditLogs.jsx` | Execution test verifying generated `.sql` backup files |
+| **SRS-CSH-01 to 03** | `client/src/components/POSBilling.jsx` | Poka-Yoke cart test blocking out-of-stock items |
+| **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` | Calculation test finalizing waiter orders into billed tickets |
+| **SRS-WTR-01 to 03** | `client/src/components/waiter/WaiterDashboard.jsx` | Table map test verifying seating, capacity & clear actions |
+| **SRS-WTR-04 to 06** | `api/routes/waiter.js` & `WaiterDashboard.jsx` | Menu testing verifying price & discount percentage badges |
+| **SRS-WTR-07 to 08** | `api/routes/waiter.js` | Order submission test setting status `Pending_Cashier` |
+| **SRS-WTR-09 to 11** | `WaiterDashboard.jsx` & `ReceiptModal.jsx` | Thermal bill print & food ready serving verification |
+| **SRS-KIT-01 to 06** | `client/src/components/kitchen/KitchenOrderQueue.jsx` | State transition test (`New` → `Prep` → `Ready`) with waiter alert |
 
 ---
 
 ## 9. Conclusion
-This Software Requirements Specification establishes a rigorous, mistake-proof foundation for the **Restaurant Billing & Surveillance System**. By embedding TQM reliability principles directly into software architecture—through strict multi-role access control, immutable audit trails, server-side mathematical validation, and complete stakeholder mapping—the system eliminates human billing error, prevents revenue leakage, and ensures total operational transparency.
+This Software Requirements Specification establishes a rigorous, mistake-proof foundation for the **Restaurant Billing & Surveillance System**. By embedding TQM reliability principles directly into software architecture—through strict multi-role access control, immutable audit trails, server-side mathematical validation, real-time table sitting management, and complete stakeholder mapping across Owner, Admin, Cashier, Waiter, and Kitchen Staff—the system eliminates human error, prevents revenue leakage, coordinates floor service, and ensures total operational excellence.

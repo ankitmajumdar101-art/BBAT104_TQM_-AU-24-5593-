@@ -8,7 +8,7 @@ const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 // All user management routes strictly require Admin or Owner
 router.use(authenticateToken, authorizeRoles('Admin', 'Owner'));
 
-const VALID_ROLES = ['Owner', 'Admin', 'Cashier', 'Kitchen Staff'];
+const VALID_ROLES = ['Owner', 'Admin', 'Cashier', 'Kitchen Staff', 'Waiter'];
 
 // GET /api/users - List all users with search and filters (Section 3.2.B)
 router.get('/', async (req, res, next) => {

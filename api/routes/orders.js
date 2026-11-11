@@ -763,6 +763,169 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // 8. GET SINGLE ORDER WITH LINE ITEMS & SETTINGS
 // For Receipt Generation & Duplicate Reprinting (Section 4.2.F & G)
 // ============================================================
+// ============================================================
+// WAITER PENDING ORDERS QUEUE FOR CASHIER (Section 4.2.W)
+// Cashier reviews waiter orders, calculates bill, and sends to Kitchen + Waiter
+// ============================================================
+router.get('/waiter-pending', authenticateToken, authorizeRoles('Cashier', 'Admin', 'Owner'), async (req, res, next) => {
+  try {
+    const [orders] = await db.query(`
+      SELECT o.*, u.username AS waiter_username, u.full_name AS waiter_full_name
+      FROM orders o
+      LEFT JOIN users u ON o.waiter_id = u.id
+      WHERE o.order_status = 'Pending_Cashier'
+      ORDER BY o.id ASC
+    `);
+
+    for (const order of orders) {
+      const [items] = await db.query(
+        'SELECT item_name, price, quantity, subtotal FROM order_items WHERE order_id = ?',
+        [order.id]
+      );
+      order.items = items;
+    }
+
+    res.json({ success: true, count: orders.length, orders });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Cashier calculates and finalizes bill for a waiter-submitted order
+router.post('/:id/finalize-waiter-bill', authenticateToken, authorizeRoles('Cashier', 'Admin'), async (req, res, next) => {
+  const connection = await db.getConnection();
+  try {
+    const { id } = req.params;
+    const {
+      payment_method = 'Cash',
+      amount_received = 0,
+      transaction_reference = '',
+      discount_type = 'fixed',
+      discount_value = 0,
+      notes = ''
+    } = req.body;
+
+    const [orders] = await connection.query('SELECT * FROM orders WHERE id = ?', [id]);
+    if (orders.length === 0) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    const order = orders[0];
+    if (order.order_status !== 'Pending_Cashier') {
+      return res.status(400).json({ success: false, message: `Order #${order.bill_number} is already ${order.order_status}.` });
+    }
+
+    await connection.beginTransaction();
+
+    const settings = await getBillingSettings();
+    const subtotal = parseFloat(order.subtotal);
+    const taxRate = settings.total_tax_rate;
+    const taxAmount = parseFloat(((subtotal * taxRate) / 100).toFixed(2));
+
+    // Calculate discount
+    let discountAmount = 0;
+    const discVal = parseFloat(discount_value) || 0;
+    if (discount_type === 'percentage') {
+      discountAmount = parseFloat(((subtotal * discVal) / 100).toFixed(2));
+    } else {
+      discountAmount = parseFloat(discVal.toFixed(2));
+    }
+    if (discountAmount > subtotal) discountAmount = subtotal;
+
+    let total = parseFloat((subtotal + taxAmount - discountAmount).toFixed(2));
+    if (settings.billing_rounding === 'nearest_rupee') {
+      total = Math.round(total);
+    }
+
+    let amountRec = parseFloat(amount_received) || total;
+    let changeDue = 0;
+    if (payment_method === 'Cash') {
+      if (amountRec < total) amountRec = total;
+      changeDue = parseFloat((amountRec - total).toFixed(2));
+    } else {
+      amountRec = total;
+      changeDue = 0;
+    }
+
+    // Generate formal bill number
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
+    const randSuffix = Math.floor(100 + Math.random() * 900);
+    const formalBillNumber = `${settings.receipt_prefix}-${dateStr}-${timeStr}-${randSuffix}`;
+
+    // Update order: status becomes Completed, kitchen_status becomes New (forwarded to kitchen)
+    await connection.query(`
+      UPDATE orders
+      SET bill_number = ?,
+          subtotal = ?,
+          tax_rate = ?,
+          tax_amount = ?,
+          discount_type = ?,
+          discount_value = ?,
+          discount_amount = ?,
+          total = ?,
+          payment_method = ?,
+          payment_status = 'Paid',
+          order_status = 'Completed',
+          kitchen_status = 'New',
+          amount_received = ?,
+          change_due = ?,
+          transaction_reference = ?,
+          notes = CONCAT(COALESCE(notes, ''), ' ', ?),
+          created_by = ?,
+          kitchen_updated_at = NOW()
+      WHERE id = ?
+    `, [
+      formalBillNumber,
+      subtotal,
+      taxRate,
+      taxAmount,
+      discount_type,
+      discVal,
+      discountAmount,
+      total,
+      payment_method,
+      amountRec,
+      changeDue,
+      (transaction_reference || '').trim(),
+      (notes || '').trim(),
+      req.user.id,
+      id
+    ]);
+
+    // Update table status to 'Bill Ready'
+    await connection.query(`
+      UPDATE restaurant_tables
+      SET status = 'Bill Ready'
+      WHERE table_number = ?
+    `, [order.table_number]);
+
+    await connection.commit();
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'CASHIER_FINALIZE_WAITER_ORDER',
+      details: `Cashier ${req.user.username} calculated & finalized bill #${formalBillNumber} for Table #${order.table_number} (Origin: Waiter ${order.waiter_name || order.created_by}). Total: ₹${total.toFixed(2)}. Forwarded to Kitchen & Waiter.`
+    });
+
+    res.json({
+      success: true,
+      message: `Bill #${formalBillNumber} calculated and finalized! Order forwarded to Kitchen Chef and bill sent to Waiter.`,
+      bill_number: formalBillNumber,
+      total,
+      order_id: id
+    });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+});
+
 router.get('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -781,9 +944,12 @@ router.get('/:id', authenticateToken, async (req, res, next) => {
 
     const order = orders[0];
 
-    // If Cashier, ensure they cannot view other cashiers' bills
-    if (req.user.role === 'Cashier' && order.created_by !== req.user.id) {
+    // Role-based visibility check
+    if (req.user.role === 'Cashier' && order.created_by !== req.user.id && order.order_status !== 'Pending_Cashier') {
       return res.status(403).json({ success: false, message: 'Access denied: You can only view your own bills.' });
+    }
+    if (req.user.role === 'Waiter' && order.waiter_id !== req.user.id && order.created_by !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Access denied: You can only view your assigned table bills.' });
     }
 
     const [items] = await db.query(

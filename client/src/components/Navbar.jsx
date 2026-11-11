@@ -15,6 +15,7 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
   const isAdmin = user?.role === 'Admin';
   const isCashier = user?.role === 'Cashier';
   const isKitchen = user?.role === 'Kitchen Staff';
+  const isWaiter = user?.role === 'Waiter';
 
   let navItems = [];
   let portalTitle = 'RESTAURANT BILLING & POS';
@@ -34,6 +35,11 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
     navItems = [
       { id: 'cashier', label: 'Cashier Terminal', icon: Receipt, roles: ['Cashier'] }
     ];
+  } else if (isWaiter) {
+    portalTitle = '🍽️ WAITER SERVICE & TABLE PORTAL';
+    navItems = [
+      { id: 'waiter', label: 'Waiter Station', icon: UtensilsCrossed, roles: ['Waiter'] }
+    ];
   } else {
     portalTitle = '👨‍🍳 KITCHEN DISPLAY SYSTEM (KDS)';
     navItems = [
@@ -47,7 +53,8 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
     Owner: 'background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D;',
     Admin: 'background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE;',
     Cashier: 'background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0;',
-    'Kitchen Staff': 'background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5;'
+    'Kitchen Staff': 'background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5;',
+    Waiter: 'background: #F3E8FF; color: #6B21A8; border: 1px solid #D8B4FE;'
   };
 
   return (
@@ -156,8 +163,8 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
                 padding: '1px 6px',
                 borderRadius: '4px',
                 marginTop: '2px',
-                background: user?.role === 'Owner' ? '#FEF3C7' : user?.role === 'Admin' ? '#DBEAFE' : '#D1FAE5',
-                color: user?.role === 'Owner' ? '#92400E' : user?.role === 'Admin' ? '#1E40AF' : '#065F46'
+                background: user?.role === 'Owner' ? '#FEF3C7' : user?.role === 'Admin' ? '#DBEAFE' : user?.role === 'Waiter' ? '#F3E8FF' : '#D1FAE5',
+                color: user?.role === 'Owner' ? '#92400E' : user?.role === 'Admin' ? '#1E40AF' : user?.role === 'Waiter' ? '#6B21A8' : '#065F46'
               }}>
                 {user?.role?.toUpperCase()}
               </span>

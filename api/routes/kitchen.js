@@ -57,6 +57,8 @@ router.get('/overview', async (req, res, next) => {
         o.id, 
         o.bill_number, 
         o.table_number, 
+        o.waiter_name,
+        o.waiter_id,
         o.kitchen_status, 
         o.notes, 
         o.created_at, 
@@ -107,6 +109,8 @@ router.get('/orders', async (req, res, next) => {
         o.bill_number, 
         o.table_number, 
         o.customer_name,
+        o.waiter_name,
+        o.waiter_id,
         o.kitchen_status, 
         o.notes, 
         o.created_at, 
@@ -211,6 +215,13 @@ router.put('/orders/:id/status', async (req, res, next) => {
       'UPDATE orders SET kitchen_status = ?, kitchen_updated_at = NOW() WHERE id = ?',
       [new_status, id]
     );
+
+    // Sync restaurant table status with kitchen progress
+    if (new_status === 'Ready') {
+      await db.query('UPDATE restaurant_tables SET status = "Food Ready" WHERE table_number = ?', [order.table_number]);
+    } else if (new_status === 'Completed') {
+      await db.query('UPDATE restaurant_tables SET status = "Served" WHERE table_number = ?', [order.table_number]);
+    }
 
     // Audit log
     await logAudit({

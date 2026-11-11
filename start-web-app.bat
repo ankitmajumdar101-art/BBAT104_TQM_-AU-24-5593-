@@ -49,6 +49,7 @@ echo   Role-Based Login Accounts:
 echo   - 👔 Owner:         owner        / owner123
 echo   - ⚙️ Admin:         admin        / admin123
 echo   - 💳 Cashier:       cashier      / cashier123
+echo   - 🍽️ Waiter:        waiter       / waiter123
 echo   - 🍳 Kitchen Staff: kitchen_chef / kitchen123
 echo =======================================================
 echo.

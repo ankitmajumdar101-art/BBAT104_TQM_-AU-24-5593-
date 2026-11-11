@@ -337,6 +337,96 @@ export default function Login({ onLoginSuccess }) {
                   <ArrowRight size={18} />
                 </button>
               </form>
+
+              {/* Quick Demo Role Selector */}
+              <div style={{ marginTop: '24px', paddingTop: '18px', borderTop: '1px solid #E2E8F0' }}>
+                <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748B', letterSpacing: '0.4px', textAlign: 'center', marginBottom: '10px' }}>
+                  QUICK ROLE ACCESS (1-CLICK TEST)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setUsername('waiter'); setPassword('waiter123'); }}
+                    style={{
+                      background: '#F3E8FF',
+                      color: '#6B21A8',
+                      border: '1px solid #D8B4FE',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      gridColumn: 'span 2'
+                    }}
+                  >
+                    🍽️ Waiter (Floor & Table Service)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setUsername('cashier'); setPassword('cashier123'); }}
+                    style={{
+                      background: '#ECFDF5',
+                      color: '#065F46',
+                      border: '1px solid #A7F3D0',
+                      borderRadius: '8px',
+                      padding: '6px 8px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🧾 Cashier POS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setUsername('kitchen_chef'); setPassword('kitchen123'); }}
+                    style={{
+                      background: '#FFF7ED',
+                      color: '#C2410C',
+                      border: '1px solid #FFEDD5',
+                      borderRadius: '8px',
+                      padding: '6px 8px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    👨‍🍳 Kitchen Chef
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setUsername('owner'); setPassword('owner123'); }}
+                    style={{
+                      background: '#FEF3C7',
+                      color: '#92400E',
+                      border: '1px solid #FCD34D',
+                      borderRadius: '8px',
+                      padding: '6px 8px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    👑 Owner
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setUsername('admin'); setPassword('admin123'); }}
+                    style={{
+                      background: '#EFF6FF',
+                      color: '#1E40AF',
+                      border: '1px solid #BFDBFE',
+                      borderRadius: '8px',
+                      padding: '6px 8px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ⚙️ Admin
+                  </button>
+                </div>
+              </div>
             </>
           )}
         </div>

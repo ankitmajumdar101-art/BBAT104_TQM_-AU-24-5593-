@@ -260,6 +260,26 @@ export default function KitchenOrderQueue({ status, title, subtitle, nextStatus,
                     <span>Placed: {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
 
+                  {/* Assigned Waiter Badge */}
+                  {order.waiter_name && (
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: '#F3E8FF',
+                      color: '#6B21A8',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      marginBottom: '8px',
+                      border: '1px solid #E9D5FF'
+                    }}>
+                      <span>🧑‍🍳 Service Waiter:</span>
+                      <span>{order.waiter_name}</span>
+                    </div>
+                  )}
+
                   {/* Special Notes / Allergy Alert */}
                   {order.notes && (
                     <div style={{
