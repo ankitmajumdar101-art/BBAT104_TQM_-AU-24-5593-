@@ -14,7 +14,9 @@ import {
   Wallet,
   Receipt,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  UtensilsCrossed,
+  Percent
 } from 'lucide-react';
 
 export default function OwnerOverview({ onNavigate }) {
@@ -172,6 +174,42 @@ export default function OwnerOverview({ onNavigate }) {
           </span>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => onNavigate('menu')}
+            style={{
+              padding: '7px 14px',
+              borderRadius: '8px',
+              background: 'rgba(255,255,255,0.18)',
+              color: '#FFF',
+              border: '1px solid #FCD34D',
+              fontSize: '12px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <UtensilsCrossed size={13} color="#FCD34D" /> Menu & Offers
+          </button>
+          <button
+            onClick={() => onNavigate('billing')}
+            style={{
+              padding: '7px 14px',
+              borderRadius: '8px',
+              background: 'rgba(255,255,255,0.18)',
+              color: '#FFF',
+              border: '1px solid #FCD34D',
+              fontSize: '12px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <Percent size={13} color="#FCD34D" /> Tax & Invoicing Rules
+          </button>
           <button
             onClick={() => onNavigate('sales')}
             style={{

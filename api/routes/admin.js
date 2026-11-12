@@ -89,94 +89,14 @@ router.get('/overview', async (req, res, next) => {
 });
 
 // ============================================================
-// F. TAX AND BILLING SETTINGS (Section 3.2.F)
+// F. TAX AND BILLING SETTINGS - RESTRICTED TO OWNER
+// System Administrator does not have tax configuration privileges
 // ============================================================
-router.get('/billing-settings', async (req, res, next) => {
-  try {
-    const [rows] = await db.query('SELECT setting_key, setting_value FROM restaurant_settings');
-    const settings = {
-      tax_rate_cgst: '2.50',
-      tax_rate_sgst: '2.50',
-      tax_calculation_mode: 'exclusive',
-      max_discount_percent: '30.00',
-      receipt_prefix: 'BILL',
-      currency_symbol: '₹',
-      currency_code: 'INR',
-      billing_rounding: 'exact',
-      receipt_header: 'ROYAL FEAST RESTAURANT',
-      receipt_footer: 'Thank you for dining with us! Please visit again.'
-    };
-    rows.forEach(r => { settings[r.setting_key] = r.setting_value; });
-
-    res.json({ success: true, settings });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.put('/billing-settings', async (req, res, next) => {
-  try {
-    const {
-      tax_rate_cgst,
-      tax_rate_sgst,
-      tax_calculation_mode,
-      max_discount_percent,
-      receipt_prefix,
-      currency_symbol,
-      currency_code,
-      billing_rounding,
-      receipt_header,
-      receipt_footer
-    } = req.body;
-
-    const cgst = parseFloat(tax_rate_cgst);
-    const sgst = parseFloat(tax_rate_sgst);
-    const maxDisc = parseFloat(max_discount_percent);
-
-    if (isNaN(cgst) || cgst < 0 || isNaN(sgst) || sgst < 0) {
-      return res.status(400).json({ success: false, message: 'Tax rates must be valid non-negative numbers.' });
-    }
-    if (isNaN(maxDisc) || maxDisc < 0 || maxDisc > 100) {
-      return res.status(400).json({ success: false, message: 'Max discount percentage must be between 0 and 100.' });
-    }
-
-    const updates = {
-      tax_rate_cgst: cgst.toFixed(2),
-      tax_rate_sgst: sgst.toFixed(2),
-      tax_calculation_mode: tax_calculation_mode === 'inclusive' ? 'inclusive' : 'exclusive',
-      max_discount_percent: maxDisc.toFixed(2),
-      receipt_prefix: (receipt_prefix || 'BILL').trim(),
-      currency_symbol: (currency_symbol || '₹').trim(),
-      currency_code: (currency_code || 'INR').trim(),
-      billing_rounding: billing_rounding === 'nearest_rupee' ? 'nearest_rupee' : 'exact',
-      receipt_header: (receipt_header || '').trim(),
-      receipt_footer: (receipt_footer || '').trim()
-    };
-
-    for (const [key, val] of Object.entries(updates)) {
-      await db.query(`
-        INSERT INTO restaurant_settings (setting_key, setting_value)
-        VALUES (?, ?)
-        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
-      `, [key, val]);
-    }
-
-    await logAudit({
-      userId: req.user.id,
-      username: req.user.username,
-      role: req.user.role,
-      action: 'UPDATE_BILLING_SETTINGS',
-      details: `Updated billing rules: CGST ${cgst}% + SGST ${sgst}%, Max Disc: ${maxDisc}%, Rounding: ${updates.billing_rounding}`
-    });
-
-    res.json({
-      success: true,
-      message: 'Operational billing & tax configuration updated successfully.',
-      settings: updates
-    });
-  } catch (error) {
-    next(error);
-  }
+router.all('/billing-settings', (req, res) => {
+  return res.status(403).json({
+    success: false,
+    message: 'Access Denied: Tax & Billing rules are exclusively managed by the Restaurant Owner. System Administrator is restricted to IT infrastructure and staff accounts.'
+  });
 });
 
 // ============================================================

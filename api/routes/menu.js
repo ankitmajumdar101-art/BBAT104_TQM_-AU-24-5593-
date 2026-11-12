@@ -24,8 +24,8 @@ router.get('/categories', async (req, res, next) => {
   }
 });
 
-// POST /api/menu/categories - Add category (Admin only)
-router.post('/categories', authenticateToken, authorizeRoles('Admin', 'Owner'), async (req, res, next) => {
+// POST /api/menu/categories - Add category (Restaurant Owner only)
+router.post('/categories', authenticateToken, authorizeRoles('Owner'), async (req, res, next) => {
   try {
     const { name, description = '', status = 'active' } = req.body;
     if (!name || !name.trim()) {
@@ -60,8 +60,8 @@ router.post('/categories', authenticateToken, authorizeRoles('Admin', 'Owner'), 
   }
 });
 
-// PUT /api/menu/categories/:id - Update category (Admin only)
-router.put('/categories/:id', authenticateToken, authorizeRoles('Admin', 'Owner'), async (req, res, next) => {
+// PUT /api/menu/categories/:id - Update category (Restaurant Owner only)
+router.put('/categories/:id', authenticateToken, authorizeRoles('Owner'), async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, description, status } = req.body;
@@ -95,8 +95,8 @@ router.put('/categories/:id', authenticateToken, authorizeRoles('Admin', 'Owner'
   }
 });
 
-// DELETE /api/menu/categories/:id - Deactivate category (Section 3.2.E safeguard)
-router.delete('/categories/:id', authenticateToken, authorizeRoles('Admin', 'Owner'), async (req, res, next) => {
+// DELETE /api/menu/categories/:id - Deactivate category (Restaurant Owner only)
+router.delete('/categories/:id', authenticateToken, authorizeRoles('Owner'), async (req, res, next) => {
   try {
     const { id } = req.params;
     const [existing] = await db.query('SELECT * FROM categories WHERE id = ?', [id]);
@@ -149,7 +149,7 @@ router.get('/', async (req, res, next) => {
   try {
     const { category, search, availableOnly } = req.query;
     let query = `
-      SELECT m.id, m.name, m.description, m.price, m.available, m.image_url, 
+      SELECT m.id, m.name, m.description, m.price, m.discount_percent, m.available, m.image_url, 
              c.id AS category_id, c.name AS category_name, c.status AS category_status,
              m.created_at, m.updated_at
       FROM menu_items m
@@ -181,10 +181,10 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// POST /api/menu - Add new food/beverage item (Admin only)
-router.post('/', authenticateToken, authorizeRoles('Admin', 'Owner'), async (req, res, next) => {
+// POST /api/menu - Add new food/beverage item (Restaurant Owner only)
+router.post('/', authenticateToken, authorizeRoles('Owner'), async (req, res, next) => {
   try {
-    const { name, category_id, price, description = '', available = 1, image_url = '' } = req.body;
+    const { name, category_id, price, description = '', available = 1, image_url = '', discount_percent = 0 } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Item name is required.' });
@@ -196,11 +196,12 @@ router.post('/', authenticateToken, authorizeRoles('Admin', 'Owner'), async (req
     if (isNaN(numPrice) || numPrice < 0) {
       return res.status(400).json({ success: false, message: 'Price must be a valid non-negative number.' });
     }
+    const numDiscount = Math.min(100, Math.max(0, parseFloat(discount_percent) || 0));
 
     const [result] = await db.query(
-      `INSERT INTO menu_items (category_id, name, description, price, available, image_url)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [category_id, name.trim(), description.trim(), numPrice, available ? 1 : 0, image_url ? image_url.trim() : '']
+      `INSERT INTO menu_items (category_id, name, description, price, discount_percent, available, image_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [category_id, name.trim(), description.trim(), numPrice, numDiscount, available ? 1 : 0, image_url ? image_url.trim() : '']
     );
 
     await logAudit({
@@ -208,7 +209,7 @@ router.post('/', authenticateToken, authorizeRoles('Admin', 'Owner'), async (req
       username: req.user.username,
       role: req.user.role,
       action: 'ADD_MENU_ITEM',
-      details: `Added menu item "${name.trim()}" (₹${numPrice.toFixed(2)})`
+      details: `Owner added menu item "${name.trim()}" (Price: ₹${numPrice.toFixed(2)}, Discount: ${numDiscount}%)`
     });
 
     res.status(201).json({
@@ -221,11 +222,11 @@ router.post('/', authenticateToken, authorizeRoles('Admin', 'Owner'), async (req
   }
 });
 
-// PUT /api/menu/:id - Edit menu item / Update price (Admin only)
-router.put('/:id', authenticateToken, authorizeRoles('Admin', 'Owner'), async (req, res, next) => {
+// PUT /api/menu/:id - Edit menu item / Update price & discount (Restaurant Owner only)
+router.put('/:id', authenticateToken, authorizeRoles('Owner'), async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, category_id, price, description, available, image_url } = req.body;
+    const { name, category_id, price, description, available, image_url, discount_percent } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Item name is required.' });
@@ -241,16 +242,18 @@ router.put('/:id', authenticateToken, authorizeRoles('Admin', 'Owner'), async (r
     }
 
     const oldPrice = parseFloat(check[0].price);
+    const numDiscount = discount_percent !== undefined ? Math.min(100, Math.max(0, parseFloat(discount_percent) || 0)) : (parseFloat(check[0].discount_percent) || 0);
 
     await db.query(
       `UPDATE menu_items 
-       SET category_id = ?, name = ?, description = ?, price = ?, available = ?, image_url = ?
+       SET category_id = ?, name = ?, description = ?, price = ?, discount_percent = ?, available = ?, image_url = ?
        WHERE id = ?`,
       [
         category_id || check[0].category_id,
         name.trim(),
         description !== undefined ? description.trim() : check[0].description,
         numPrice,
+        numDiscount,
         available !== undefined ? (available ? 1 : 0) : check[0].available,
         image_url !== undefined ? image_url.trim() : check[0].image_url,
         id
@@ -264,7 +267,7 @@ router.put('/:id', authenticateToken, authorizeRoles('Admin', 'Owner'), async (r
       username: req.user.username,
       role: req.user.role,
       action: oldPrice !== numPrice ? 'PRICE_CHANGE' : 'UPDATE_MENU_ITEM',
-      details: `Updated item #${id}: "${name.trim()}"${priceChangeNote} | Available: ${available ? 'Yes' : 'No'}`
+      details: `Owner updated item #${id}: "${name.trim()}"${priceChangeNote} | Discount: ${numDiscount}% | Available: ${available ? 'Yes' : 'No'}`
     });
 
     res.json({
@@ -276,7 +279,7 @@ router.put('/:id', authenticateToken, authorizeRoles('Admin', 'Owner'), async (r
   }
 });
 
-// PATCH /api/menu/:id/toggle - Toggle availability (Cashier, Admin)
+// PATCH /api/menu/:id/toggle - Toggle availability (Cashier, Waiter, Owner)
 router.patch('/:id/toggle', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -307,8 +310,47 @@ router.patch('/:id/toggle', authenticateToken, async (req, res, next) => {
   }
 });
 
-// DELETE /api/menu/:id - Deactivate or delete menu item (Section 3.2.D & 3.2.E safeguard)
-router.delete('/:id', authenticateToken, authorizeRoles('Admin', 'Owner'), async (req, res, next) => {
+// PUT /api/menu/:id/discount - Set promotional discount / customer offer (Restaurant Owner only)
+router.put('/:id/discount', authenticateToken, authorizeRoles('Owner'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { discount_percent = 0 } = req.body;
+    const numDiscount = Math.min(100, Math.max(0, parseFloat(discount_percent) || 0));
+
+    const [check] = await db.query('SELECT * FROM menu_items WHERE id = ?', [id]);
+    if (check.length === 0) {
+      return res.status(404).json({ success: false, message: 'Menu item not found.' });
+    }
+
+    await db.query('UPDATE menu_items SET discount_percent = ? WHERE id = ?', [numDiscount, id]);
+
+    const item = check[0];
+    const regularPrice = parseFloat(item.price);
+    const discountAmt = parseFloat(((regularPrice * numDiscount) / 100).toFixed(2));
+    const offerPrice = parseFloat((regularPrice - discountAmt).toFixed(2));
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'UPDATE_ITEM_DISCOUNT',
+      details: `Owner set promotional offer on "${item.name}": ${numDiscount}% OFF (Regular: ₹${regularPrice.toFixed(2)}, Offer Price: ₹${offerPrice.toFixed(2)})`
+    });
+
+    res.json({
+      success: true,
+      message: `Promotional discount for "${item.name}" updated to ${numDiscount}% OFF. Customers pay ₹${offerPrice.toFixed(2)}.`,
+      discount_percent: numDiscount,
+      regular_price: regularPrice,
+      offer_price: offerPrice
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/menu/:id - Deactivate or delete menu item (Restaurant Owner only)
+router.delete('/:id', authenticateToken, authorizeRoles('Owner'), async (req, res, next) => {
   try {
     const { id } = req.params;
     const [items] = await db.query('SELECT name FROM menu_items WHERE id = ?', [id]);

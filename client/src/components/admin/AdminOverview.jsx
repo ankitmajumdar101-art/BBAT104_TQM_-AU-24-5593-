@@ -156,25 +156,7 @@ export default function AdminOverview({ onNavigate }) {
               gap: '6px'
             }}
           >
-            <Users size={13} color="#93C5FD" /> User Management
-          </button>
-          <button
-            onClick={() => onNavigate('menu')}
-            style={{
-              padding: '7px 14px',
-              borderRadius: '8px',
-              background: 'rgba(255,255,255,0.12)',
-              color: '#FFF',
-              border: '1px solid rgba(255,255,255,0.2)',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <UtensilsCrossed size={13} color="#93C5FD" /> Menu Management
+            <Users size={13} color="#93C5FD" /> User Management & Roles
           </button>
           <button
             onClick={() => onNavigate('backup')}
@@ -192,7 +174,7 @@ export default function AdminOverview({ onNavigate }) {
               gap: '6px'
             }}
           >
-            <Database size={13} color="#93C5FD" /> Backup & Restore
+            <Database size={13} color="#93C5FD" /> Backup & Recovery
           </button>
           <button
             onClick={() => onNavigate('audit')}
@@ -210,10 +192,10 @@ export default function AdminOverview({ onNavigate }) {
               gap: '6px'
             }}
           >
-            <ShieldCheck size={13} color="#93C5FD" /> Audit Logs
+            <ShieldCheck size={13} color="#93C5FD" /> Audit & Error Logs
           </button>
           <button
-            onClick={() => onNavigate('billing')}
+            onClick={() => onNavigate('system')}
             style={{
               padding: '7px 14px',
               borderRadius: '8px',
@@ -228,7 +210,7 @@ export default function AdminOverview({ onNavigate }) {
               gap: '6px'
             }}
           >
-            <Settings size={13} color="#93C5FD" /> Tax & Billing Rules
+            <Settings size={13} color="#93C5FD" /> System Technical Settings
           </button>
         </div>
       </div>
@@ -256,19 +238,19 @@ export default function AdminOverview({ onNavigate }) {
           </p>
         </div>
 
-        {/* Active Menu Items */}
+        {/* Database Backups Status */}
         <div style={{ background: '#FFF', borderRadius: '16px', padding: '20px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: '#64748B' }}>Active Menu Offerings</span>
-            <div style={{ background: '#FEF3C7', color: '#D97706', width: '38px', height: '38px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <UtensilsCrossed size={20} />
+            <span style={{ fontSize: '13px', fontWeight: '600', color: '#64748B' }}>Database Snapshots</span>
+            <div style={{ background: '#EFF6FF', color: '#2563EB', width: '38px', height: '38px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Database size={20} />
             </div>
           </div>
           <div style={{ fontSize: '28px', fontWeight: '800', color: '#0F172A' }}>
-            {overview.activeMenuItemsCount}
+            {overview.recentBackups?.length || 0}
           </div>
           <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#64748B' }}>
-            Available for immediate POS cashier ordering
+            Verified disaster recovery SQL snapshots
           </p>
         </div>
 
@@ -307,7 +289,7 @@ export default function AdminOverview({ onNavigate }) {
 
       {/* Grid of 4 Operational Activity Streams (Section 3.2.A Requirement) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-        {/* Recent Menu Updates */}
+        {/* Recent Security & RBAC Logs */}
         <div style={{
           background: '#FFF',
           borderRadius: '16px',
@@ -317,24 +299,24 @@ export default function AdminOverview({ onNavigate }) {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UtensilsCrossed size={16} color="var(--primary)" /> Recent Menu Updates
+              <ShieldCheck size={16} color="#2563EB" /> Recent Security & RBAC Logs
             </h3>
             <button
-              onClick={() => onNavigate('menu')}
-              style={{ fontSize: '12px', color: 'var(--primary)', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '2px' }}
+              onClick={() => onNavigate('audit')}
+              style={{ fontSize: '12px', color: '#2563EB', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '2px' }}
             >
-              Manage Menu <ArrowUpRight size={13} />
+              View Audit <ArrowUpRight size={13} />
             </button>
           </div>
 
           {overview.recentMenuUpdates.length === 0 ? (
-            <p style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic', margin: 0 }}>No recent menu modifications logged.</p>
+            <p style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic', margin: 0 }}>No recent audit events logged.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {overview.recentMenuUpdates.map(u => (
                 <div key={u.id} style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748B', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: '700', color: '#B45309' }}>{u.action}</span>
+                    <span style={{ fontWeight: '700', color: '#1E40AF' }}>{u.action}</span>
                     <span>{new Date(u.timestamp).toLocaleString('en-IN')}</span>
                   </div>
                   <div style={{ fontSize: '12px', color: '#334155', fontWeight: '600' }}>{u.details}</div>

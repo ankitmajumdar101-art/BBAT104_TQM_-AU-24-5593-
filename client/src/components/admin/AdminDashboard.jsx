@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { 
   BarChart3, 
   Users, 
-  UtensilsCrossed, 
-  Settings, 
   Database, 
   ShieldCheck, 
   Sliders, 
@@ -12,8 +10,6 @@ import {
 
 import AdminOverview from './AdminOverview';
 import AdminUsers from './AdminUsers';
-import AdminMenu from './AdminMenu';
-import AdminBillingSettings from './AdminBillingSettings';
 import AdminBackups from './AdminBackups';
 import AdminAuditLogs from './AdminAuditLogs';
 import AdminSystemSettings from './AdminSystemSettings';
@@ -24,13 +20,11 @@ export default function AdminDashboard({ currentUser, onLogout, initialSubTab = 
 
   const sections = [
     { id: 'overview', label: 'Overview', icon: BarChart3, desc: 'A. Operational Status' },
-    { id: 'users', label: 'User Accounts', icon: Users, desc: 'B & C. Staff & RBAC' },
-    { id: 'menu', label: 'Menu & Categories', icon: UtensilsCrossed, desc: 'D & E. Offerings & Prices' },
-    { id: 'billing', label: 'Tax & Billing', icon: Settings, desc: 'F. GST & Invoicing Rules' },
-    { id: 'backup', label: 'Backups & Recovery', icon: Database, desc: 'G. Safeguards & Dumps' },
-    { id: 'audit', label: 'Audit & Error Logs', icon: ShieldCheck, desc: 'H & I. Compliance Trails' },
-    { id: 'system', label: 'System Settings', icon: Sliders, desc: 'J. Operational Prefs' },
-    { id: 'profile', label: 'Profile & Security', icon: UserCircle, desc: 'K. Identity & Password' },
+    { id: 'users', label: 'User Accounts & Roles', icon: Users, desc: 'B. Staff & RBAC Management' },
+    { id: 'backup', label: 'Backups & Recovery', icon: Database, desc: 'C. Safeguards & Dumps' },
+    { id: 'audit', label: 'Audit & Error Logs', icon: ShieldCheck, desc: 'D. Compliance Trails' },
+    { id: 'system', label: 'System Settings', icon: Sliders, desc: 'E. Technical Prefs' },
+    { id: 'profile', label: 'Profile & Security', icon: UserCircle, desc: 'F. Identity & Password' },
   ];
 
   return (
@@ -84,8 +78,6 @@ export default function AdminDashboard({ currentUser, onLogout, initialSubTab = 
       <div style={{ minHeight: '600px' }}>
         {activeSubTab === 'overview' && <AdminOverview onNavigate={(target) => setActiveSubTab(target)} />}
         {activeSubTab === 'users' && <AdminUsers currentUser={currentUser} />}
-        {activeSubTab === 'menu' && <AdminMenu />}
-        {activeSubTab === 'billing' && <AdminBillingSettings />}
         {activeSubTab === 'backup' && <AdminBackups />}
         {activeSubTab === 'audit' && <AdminAuditLogs />}
         {activeSubTab === 'system' && <AdminSystemSettings />}

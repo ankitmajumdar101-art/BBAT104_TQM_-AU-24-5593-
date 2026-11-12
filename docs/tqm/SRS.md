@@ -1,20 +1,19 @@
 # Software Requirements Specification (SRS)
 ## Restaurant Billing & Surveillance System
-### Course: BBAT104 — Fundamentals of Total Quality Management
-### Quality Goal: Q01 — Improve Reliability & Multi-Stakeholder Operational Excellence
+### Total Quality Management (TQM) Quality Goal Q01: Improve Reliability
 
 ---
 
 | Document Attribute | Specification Details |
 | :--- | :--- |
 | **Project Title** | Restaurant Billing & Surveillance System |
-| **Course Code / Name** | BBAT104 — Fundamentals of Total Quality Management |
-| **Quality Objective** | Q01: Improve Reliability, Mistake-Proofing (Poka-Yoke) & Traceability |
-| **Student Name** | Ankit Majumdar |
+| **Course Code & Title** | BBAT104 — Total Quality Management (TQM) |
+| **Quality Objective** | Q01: Improve Reliability & Mistake-Proofing (Poka-Yoke) |
+| **Author / Candidate** | Ankit Kumar |
 | **Roll Number / Section** | 2410301003 / Section A |
-| **Institution** | Amrapali University, Haldwani |
-| **Academic Session** | 2026–2027 (Reviews 1 & 2) |
-| **Version / Status** | Version 2.2 (Waiter Dashboard & Table Sitting Integrated) |
+| **Document Version** | 2.1.0 (Production Release — Owner Commercial Governance & Strict Admin RBAC) |
+| **Status** | Approved & Fully Verified |
+| **Date** | 2026-11-12 |
 
 ---
 
@@ -26,17 +25,17 @@ This Software Requirements Specification (SRS) defines the functional, non-funct
 ### 1.2 Core Quality Mandate (TQM Goal Q01)
 Under the **Total Quality Management (TQM) Goal Q01: Improve Reliability**, this application establishes proactive process control mechanisms (Poka-Yoke) rather than relying on reactive post-billing inspection. The system guarantees:
 * **Calculation Precision:** Zero mathematical discrepancies on customer invoices via server-enforced decimal arithmetic.
-* **Non-Repudiation & Traceability:** Immutable audit logging of every login, menu change, billing event, waiter order, kitchen ticket update, and administrative action.
-* **Role-Based Access Control (RBAC):** Strict boundaries separating Executive Surveillance (Owner), Operational Configuration (Admin), Point-of-Sale Billing (Cashier), Floor & Table Service (Waiter), and Food Preparation (Kitchen Staff).
-* **Owner Protection Invariant:** Structural access control barriers preventing administrative accounts from deleting, deactivating, or demoting the Restaurant Owner account.
+* **Non-Repudiation & Traceability:** Immutable audit logging of every login, menu change, promotional offer, billing event, waiter order, kitchen ticket update, and administrative action.
+* **Role-Based Access Control (RBAC):** Strict boundaries separating Commercial & Pricing Governance (Owner), System & Staff Infrastructure Administration (Admin), Point-of-Sale Billing (Cashier), Floor & Table Service (Waiter), and Food Preparation (Kitchen Staff).
+* **Owner Protection & Separation of Duties Invariant:** Structural access control barriers preventing administrative accounts from deleting, deactivating, or demoting the Restaurant Owner account, while simultaneously barring administrators from commercial menu pricing, customer discounts, and tax/billing configuration.
 * **Closed-Loop Workflow Coordination:** End-to-end synchronized order progression: Waiter order taking $\longrightarrow$ Cashier bill calculation $\longrightarrow$ Kitchen Chef cooking $\longrightarrow$ Real-time Waiter ready notification $\longrightarrow$ Table food delivery.
 * **Disaster Recovery:** Point-in-time database snapshots and automated backups ensuring business continuity.
 
 ### 1.3 Scope of the Application
 The application provides an end-to-end full-stack web platform comprising:
-1. **Multi-Role Authentication:** Encrypted credential verification (BCrypt + JWT) routing users to dedicated portals.
-2. **Executive Owner Portal:** Business KPI dashboards, sales reports (daily/weekly/monthly/yearly), operating expense logging, real-time Operating Profit & Loss (P&L) statements, and read-only bill surveillance.
-3. **Operational Admin Portal:** Staff account lifecycle management, menu catalog CRUD with live stock availability toggles, on-demand MySQL database backup/restore, system error logs, and security audit exploration.
+1. **Multi-Role Authentication:** Encrypted credential verification (BCrypt + JWT) routing users to dedicated role-based portals.
+2. **Executive Owner Portal:** Commercial & financial governance, business KPI dashboards, sales reports (daily/weekly/monthly/yearly), operating expense logging, real-time Operating Profit & Loss (P&L) statements, read-only bill surveillance, full Menu & Categories Catalog management with promotional discounts/offers, and Statutory Tax & Invoicing configuration (CGST, SGST, discount ceiling, bill headers).
+3. **Operational Admin Portal:** IT system infrastructure administration—staff account lifecycle management (Cashier, Waiter, Kitchen Chef), on-demand MySQL database backup/restore, system error logs, and security audit exploration. (Strictly barred from commercial menu catalog, pricing, and tax configuration).
 4. **Cashier POS Billing Terminal & Waiter Billing Queue:** High-speed touch/keyboard bill creation, incoming waiter orders queue calculation, automatic 5% GST tax calculation (2.5% CGST + 2.5% SGST), discount validation, Cash/Card/UPI settlement, and 80mm thermal receipt printing.
 5. **Waiter Service & Table Management Station:** Real-time customer table sitting system (Available, Seated, Order Sent, Bill Ready, Food Ready, Served), menu catalog with dish prices and promotional discounts, table order submission, bill delivery to customer, and kitchen ready alerts.
 6. **Kitchen Display System (KDS):** Real-time order preparation queue displaying dishes, quantities, waiter attribution, and cooking notes with strictly controlled workflow status transitions (`New` → `Preparing` → `Ready for Service`), without exposing customer financial data.
@@ -82,8 +81,8 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 
 | Stakeholder Role | Primary Purpose & Objectives | Key Functional Boundaries |
 | :--- | :--- | :--- |
-| **1. Restaurant Owner** | Executive surveillance of business performance, sales trends, expenses, and net profit. | Read-only bill surveillance. Strictly prohibited from editing or voiding daily billing transactions. |
-| **2. Administrator** | Day-to-day operational administration of staff accounts, menu catalog, backups, and audit logs. | Operational management only. Strictly prohibited from deleting, deactivating, or demoting the Owner account. |
+| **1. Restaurant Owner** | Executive commercial surveillance of business performance, sales trends, expenses, net profit, menu catalog curation, customer promotional discounts/offers, and statutory tax/billing rules. | Commercial & pricing governance. Read-only historical bill surveillance (strictly prohibited from editing or voiding finalized billing transactions). |
+| **2. Administrator** | IT system infrastructure administration—staff account lifecycle (RBAC), database backup & disaster recovery snapshots, audit trail review, and error log monitoring. | System infrastructure administration only. Strictly prohibited from deleting, deactivating, or demoting the Owner account, and strictly barred from menu item management, promotional offers, or tax/billing policies. |
 | **3. Cashier** | High-speed bill creation, waiter order calculation, tax & discount application, payment settlement, and thermal receipt printing. | Front-desk billing only. Prohibited from changing menu pricing, managing staff accounts, or modifying finalized bills. |
 | **4. Floor Waiter** | Customer table seating management, menu browsing with active discounts, order taking and submission to cashier, providing bills to guests, and serving food. | Floor table service & order creation only. Prohibited from configuring menu pricing, approving refunds, or managing user accounts. |
 | **5. Kitchen Staff (Chef)** | Timely preparation of ordered food items via Kitchen Display System (KDS) and notifying waiters when food is ready. | Kitchen queue management only. Screen strictly hides customer pricing, discounts, and payment information. |
@@ -99,11 +98,11 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 │• Kitchen Store │───>│• Customer Info │───>│ 2. Order Intake │───>│   Invoice      │───>│• Cashiers      │
 │• Cashier Desk  │    │• Menu Items    │    │ 3. Cashier Bill │    │• KDS Prep Slip │    │• Kitchen Chefs │
 │• Floor Waiters │    │• Item Rates    │    │ 4. Kitchen Prep │    │• Ready Alerts  │    │• Floor Waiters │
-│• Management    │    │• Discounts     │    │ 5. Table Service│    │• Immutable Log │    │• Admin / Owner │
+│• Owner Mgt     │    │• Discounts     │    │ 5. Table Service│    │• Immutable Log │    │• Admin / Owner │
 └────────────────┘    └────────────────┘    └─────────────────┘    └────────────────┘    └────────────────┘
 ```
 
-* **Suppliers (S):** Dining guests, floor waiters taking orders, cashier calculating bills, kitchen staff preparing dishes, and management configuring menus.
+* **Suppliers (S):** Dining guests, floor waiters taking orders, cashier calculating bills, kitchen staff preparing dishes, and restaurant owner configuring menus and pricing policies.
 * **Inputs (I):** Table seating numbers, customer details, selected dishes with prices & discounts, cooking instructions, payment methods, and role credentials.
 * **Process (P):** Table Seating Assignment $\longrightarrow$ Waiter Order Intake $\longrightarrow$ Dispatch to Cashier $\longrightarrow$ Cashier Bill Calculation $\longrightarrow$ KDS Kitchen Preparation $\longrightarrow$ Chef Ready Alert $\longrightarrow$ Waiter Food Delivery $\longrightarrow$ Table Clearing.
 * **Outputs (O):** Legally compliant 80mm GST tax receipts, real-time KDS tickets with waiter attribution, live table status indicators, realized sales records, and immutable audit logs.
@@ -140,6 +139,18 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 * **SRS-OWN-13:** The system shall provide an audit surveillance table displaying all historical bills with customer names, table numbers, cashier associations, totals, and timestamps.
 * **SRS-OWN-14:** **Zero-Tamper Mode:** The Owner shall be able to inspect full line items and print duplicate receipt copies, but shall have zero interface controls or API capabilities to modify, recalculate, or delete finalized bills.
 
+#### F. Food Menu Catalog & Category Management
+* **SRS-OWN-15:** The system shall grant the Restaurant Owner exclusive commercial authority to create, view, update, and remove categories and dishes in the restaurant menu catalog.
+* **SRS-OWN-16:** The Owner shall be able to toggle real-time dish availability (`available = 0/1`) to prevent orders of out-of-stock items across POS and Waiter stations.
+
+#### G. Customer Promotional Offers & Discount Management
+* **SRS-OWN-17:** The Owner shall have exclusive authority to configure promotional discount percentages (`discount_percent` from 0% to 100%) per dish or apply 1-click offer presets (0%, 5%, 10%, 15%, 20%, 25% OFF).
+* **SRS-OWN-18:** The system shall calculate real-time offer prices and display customer savings, seamlessly propagating promotional discounts to Waiter menu ordering and Cashier POS billing.
+
+#### H. Statutory Tax & Invoicing Rule Configuration
+* **SRS-OWN-19:** The Owner shall be the sole authority to configure Indian GST statutory rates (CGST %, SGST %, and combined GST preview), invoice receipt prefixes, and receipt header/footer messages.
+* **SRS-OWN-20:** The Owner shall have authority to enforce a maximum allowable bill discount percentage threshold (Poka-Yoke cap) preventing unauthorized cashier revenue leakage.
+
 ---
 
 ### 4.2 Stakeholder 2 — Administrator Requirements
@@ -148,17 +159,16 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 * **SRS-ADM-01:** The system shall provide user management allowing the Admin to create, view, update, deactivate, and reset passwords for Cashier, Waiter, and Kitchen Staff accounts.
 * **SRS-ADM-02:** **Owner Protection Invariant (Security Poka-Yoke):** The system shall programmatically prevent any administrator from deleting, deactivating, or demoting the Restaurant Owner account. Any such attempt must return `HTTP 403 Forbidden` and record a security violation in `audit_logs`.
 
-#### B. Menu Catalog Management
-* **SRS-ADM-03:** The system shall provide full CRUD management for food menu categories and items.
-* **SRS-ADM-04:** The system shall support setting promotional discount percentages per menu item (`discount_percent`).
-* **SRS-ADM-05:** The system shall provide a real-time availability toggle (`available`) for each dish, instantly synchronizing across POS and Waiter terminals.
+#### B. Commercial Privilege Guard (Separation of Duties)
+* **SRS-ADM-03:** **Commercial Privilege Exclusion (Structural Barrier):** The system shall strictly prevent System Administrators from accessing or mutating the food menu catalog, pricing, customer discounts, or tax/billing policies. All menu and billing configuration mutation endpoints shall return `HTTP 403 Forbidden` if invoked by an Admin. The Admin dashboard shall contain zero menu or billing configuration interfaces.
 
 #### C. Database Backup & Disaster Recovery
-* **SRS-ADM-06:** The system shall allow the Admin to generate full MySQL database backup snapshots on demand.
-* **SRS-ADM-07:** The system shall verify generated backup file sizes and log execution outcomes to `backup_logs`.
+* **SRS-ADM-04:** The system shall allow the Admin to generate full MySQL database backup snapshots on demand.
+* **SRS-ADM-05:** The system shall verify generated backup file sizes and log execution outcomes to `backup_logs`.
 
-#### D. System Security Audit Exploration
-* **SRS-ADM-08:** The system shall provide an immutable audit trail interface displaying all user actions, logins, menu updates, billing events, and security violations with timestamps and IP addresses.
+#### D. System Security Audit & Error Exploration
+* **SRS-ADM-06:** The system shall provide an immutable audit trail interface displaying all user actions, logins, menu updates, billing events, and security violations with timestamps and IP addresses.
+* **SRS-ADM-07:** The system shall provide a dedicated system error logs interface allowing administrators to inspect application exceptions and stack traces for operational reliability.
 
 ---
 
@@ -229,9 +239,10 @@ In compliance with TQM Quality Goal Q01, every quality commitment is mapped to a
 | :--- | :--- | :--- | :--- |
 | **Billing Accuracy** | Discrepancies between item rates, quantities, and bill grand total | **0 Discrepancies (100% Precision)** | Automated server-side unit tests and decimal arithmetic validation |
 | **GST Tax Compliance** | Precision of 2.5% CGST and 2.5% SGST itemization on all saved bills | **100% Statutory Compliance** | Automated verification against Indian GST statutory rules |
-| **RBAC Security Invariant** | Unauthorized attempts by Admin to delete/demote Owner | **0 Allowed (100% Blocked)** | Route-level JWT RBAC middleware returning `HTTP 403 Forbidden` |
+| **Commercial Separation Invariant** | Attempts by Admin to mutate menu items or tax/billing settings | **0 Allowed (100% Blocked)** | Route-level JWT RBAC returning `HTTP 403 Forbidden` with audit logging |
+| **Owner Protection Invariant** | Unauthorized attempts by Admin to delete/demote Owner | **0 Allowed (100% Blocked)** | Route-level JWT RBAC middleware returning `HTTP 403 Forbidden` |
 | **Waiter Handoff Integrity** | Synchronization across Waiter $\to$ Cashier $\to$ Kitchen $\to$ Customer | **100% Ticket Traceability** | Automated integration tests tracking order lifecycle states |
-| **Audit Traceability** | Critical events (logins, voids, resets, backups, waiter orders) logged with timestamp | **100% Event Coverage** | Continuous relational insertion into MySQL `audit_logs` |
+| **Audit Traceability** | Critical events (logins, voids, resets, backups, waiter orders, discounts) logged with timestamp | **100% Event Coverage** | Continuous relational insertion into MySQL `audit_logs` |
 | **KDS Dispatch Latency** | Time delay between cashier billing and KDS screen queue appearance | **< 1.5 Seconds** | Optimized database indexing and lightweight REST fetch polling |
 | **Poka-Yoke Table Control** | Prevention of seating customers on already occupied tables | **100% Blocked at Entry** | Backend table status checks returning `HTTP 400` on conflicts |
 
@@ -292,7 +303,7 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 └─────────────────────┘
 
   Additional Independent Surveillance Tables:
-  • [restaurant_settings] : (setting_key, setting_value) [GSTIN, Store Details, Tax Rates]
+  • [restaurant_settings] : (setting_key, setting_value) [GSTIN, Store Details, Tax Rates, Max Discount]
   • [error_logs]          : (error_message, stack_trace, context, timestamp)
 ```
 
@@ -319,9 +330,11 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 | **SRS-OWN-05 to 08** | `client/src/components/owner/OwnerSalesReports.jsx` | Verified CSV export and letterhead print formatting |
 | **SRS-OWN-09 to 12** | `client/src/components/owner/OwnerProfitLoss.jsx` | Mathematical verification of Sales minus Expenses |
 | **SRS-OWN-13 to 14** | `client/src/components/owner/OwnerBillHistory.jsx` | Read-only audit verification; no edit/delete endpoints |
+| **SRS-OWN-15 to 18** | `api/routes/menu.js` & `OwnerMenu.jsx` | Owner menu CRUD, offer presets & discount calculation tests |
+| **SRS-OWN-19 to 20** | `api/routes/owner.js` & `OwnerBillingSettings.jsx` | Owner tax/GST and discount limit configuration tests |
 | **SRS-ADM-01 to 02** | `api/routes/users.js` & `AdminUsers.jsx` | Automated test asserting `HTTP 403` on Owner delete |
-| **SRS-ADM-03 to 05** | `api/routes/menu.js` & `AdminMenu.jsx` | Menu CRUD testing with real-time stock & discount toggling |
-| **SRS-ADM-06 to 08** | `api/routes/backup.js` & `AuditLogs.jsx` | Execution test verifying generated `.sql` backup files |
+| **SRS-ADM-03** | `api/routes/admin.js` & `AdminDashboard.jsx` | Automated test asserting `HTTP 403` on Admin menu/tax mutation |
+| **SRS-ADM-04 to 07** | `api/routes/backup.js`, `AuditLogs.jsx`, `ErrorLogs.jsx` | Disaster recovery & audit/error inspection tests |
 | **SRS-CSH-01 to 03** | `client/src/components/POSBilling.jsx` | Poka-Yoke cart test blocking out-of-stock items |
 | **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` | Calculation test finalizing waiter orders into billed tickets |
 | **SRS-WTR-01 to 03** | `client/src/components/waiter/WaiterDashboard.jsx` | Table map test verifying seating, capacity & clear actions |
@@ -333,4 +346,4 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 ---
 
 ## 9. Conclusion
-This Software Requirements Specification establishes a rigorous, mistake-proof foundation for the **Restaurant Billing & Surveillance System**. By embedding TQM reliability principles directly into software architecture—through strict multi-role access control, immutable audit trails, server-side mathematical validation, real-time table sitting management, and complete stakeholder mapping across Owner, Admin, Cashier, Waiter, and Kitchen Staff—the system eliminates human error, prevents revenue leakage, coordinates floor service, and ensures total operational excellence.
+This Software Requirements Specification establishes a rigorous, mistake-proof foundation for the **Restaurant Billing & Surveillance System**. By embedding TQM reliability principles directly into software architecture—through strict multi-role access control, immutable audit trails, server-side mathematical validation, real-time table sitting management, separation of commercial governance (Owner) from infrastructure administration (Admin), and complete stakeholder mapping across Owner, Admin, Cashier, Waiter, and Kitchen Staff—the system eliminates human error, prevents revenue leakage, coordinates floor service, and ensures total operational excellence.

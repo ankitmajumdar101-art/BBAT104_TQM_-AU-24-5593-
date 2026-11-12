@@ -7,7 +7,9 @@ import {
   Receipt, 
   Users, 
   Settings, 
-  UserCircle 
+  UserCircle,
+  UtensilsCrossed,
+  Percent
 } from 'lucide-react';
 
 import OwnerOverview from './OwnerOverview';
@@ -16,6 +18,8 @@ import OwnerExpenses from './OwnerExpenses';
 import OwnerProfitLoss from './OwnerProfitLoss';
 import OwnerBillHistory from './OwnerBillHistory';
 import OwnerStaffPerformance from './OwnerStaffPerformance';
+import OwnerMenu from './OwnerMenu';
+import OwnerBillingSettings from './OwnerBillingSettings';
 import OwnerBusinessSettings from './OwnerBusinessSettings';
 import OwnerProfile from './OwnerProfile';
 
@@ -24,12 +28,14 @@ export default function OwnerDashboard({ onLogout, initialSubTab = 'overview' })
 
   const sections = [
     { id: 'overview', label: 'Overview', icon: BarChart3, desc: 'A. Business KPI Summary' },
+    { id: 'menu', label: 'Menu & Offers', icon: UtensilsCrossed, desc: 'Dishes, Pricing & Customer Discounts' },
+    { id: 'billing', label: 'Tax & Invoicing', icon: Percent, desc: 'GST Rates & Billing Policy' },
     { id: 'sales', label: 'Sales Reports', icon: TrendingUp, desc: 'B. Daily, Monthly & Yearly' },
     { id: 'expenses', label: 'Expenses', icon: Wallet, desc: 'C. Overheads & Raw Costs' },
     { id: 'pnl', label: 'Profit & Loss', icon: DollarSign, desc: 'D. Estimated Operating P&L' },
     { id: 'bills', label: 'Bill History', icon: Receipt, desc: 'E. Read-Only Auditing' },
     { id: 'staff', label: 'Staff Performance', icon: Users, desc: 'F. Cashier Throughput' },
-    { id: 'settings', label: 'Business Settings', icon: Settings, desc: 'G. Restaurant Profile' },
+    { id: 'settings', label: 'Business Profile', icon: Settings, desc: 'G. Restaurant Info' },
     { id: 'profile', label: 'Profile & Security', icon: UserCircle, desc: 'H. Password & Identity' },
   ];
 
@@ -83,6 +89,8 @@ export default function OwnerDashboard({ onLogout, initialSubTab = 'overview' })
       {/* Render Selected Sub-Section */}
       <div style={{ minHeight: '600px' }}>
         {activeSubTab === 'overview' && <OwnerOverview onNavigate={(target) => setActiveSubTab(target)} />}
+        {activeSubTab === 'menu' && <OwnerMenu />}
+        {activeSubTab === 'billing' && <OwnerBillingSettings />}
         {activeSubTab === 'sales' && <OwnerSalesReports />}
         {activeSubTab === 'expenses' && <OwnerExpenses />}
         {activeSubTab === 'pnl' && <OwnerProfitLoss />}
