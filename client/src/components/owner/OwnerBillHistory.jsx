@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { printReceiptElement } from '../../utils/printReceipt';
+import DishImage from '../common/DishImage';
 
 export default function OwnerBillHistory() {
   const [bills, setBills] = useState([]);
@@ -543,7 +544,15 @@ export default function OwnerBillHistory() {
                       {(selectedBill.items || []).map((item, idx) => (
                         <tr key={idx} style={{ borderBottom: '1px dotted #F1F5F9' }}>
                           <td style={{ padding: '6px 0', fontWeight: '600' }}>
-                            {item.item_name}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <DishImage
+                                src={item.image_url}
+                                alt={item.item_name}
+                                size="sm"
+                                style={{ width: '28px', height: '28px', minWidth: '28px', minHeight: '28px', borderRadius: '5px' }}
+                              />
+                              <span>{item.item_name}</span>
+                            </div>
                           </td>
                           <td style={{ padding: '6px 0', textAlign: 'center' }}>
                             {item.quantity}

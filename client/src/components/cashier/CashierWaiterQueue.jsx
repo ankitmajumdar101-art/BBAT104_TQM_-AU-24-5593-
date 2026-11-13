@@ -13,6 +13,7 @@ import {
   Sparkles,
   Printer
 } from 'lucide-react';
+import DishImage from '../common/DishImage';
 
 export default function CashierWaiterQueue({ onBillFinalized }) {
   const [orders, setOrders] = useState([]);
@@ -313,12 +314,18 @@ export default function CashierWaiterQueue({ onBillFinalized }) {
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
-                            padding: '4px 0',
+                            padding: '6px 0',
                             borderBottom: idx === ord.items.length - 1 ? 'none' : '1px dashed #E2E8F0',
                             fontSize: '12px'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <DishImage
+                              src={itm.image_url}
+                              alt={itm.item_name}
+                              size="sm"
+                              style={{ width: '28px', height: '28px', minWidth: '28px', minHeight: '28px', borderRadius: '5px' }}
+                            />
                             <span style={{
                               background: '#E2E8F0',
                               color: '#1E293B',

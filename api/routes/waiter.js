@@ -289,7 +289,7 @@ router.post('/orders', async (req, res, next) => {
       if (isNaN(qty) || qty <= 0) continue;
 
       const [menuRows] = await connection.query(
-        'SELECT id, name, price, discount_percent, available FROM menu_items WHERE id = ?',
+        'SELECT id, name, price, discount_percent, available, image_url FROM menu_items WHERE id = ?',
         [itmId]
       );
 
@@ -318,7 +318,8 @@ router.post('/orders', async (req, res, next) => {
         discount_percent: discountPercent,
         price: effectiveItemPrice, // Discounted unit price applied
         quantity: qty,
-        subtotal: lineSubtotal
+        subtotal: lineSubtotal,
+        image_url: menuItem.image_url || ''
       });
     }
 
@@ -363,9 +364,9 @@ router.post('/orders', async (req, res, next) => {
     // Insert line items
     for (const vItem of verifiedItems) {
       await connection.query(`
-        INSERT INTO order_items (order_id, menu_item_id, item_name, price, quantity, subtotal)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `, [orderId, vItem.menu_item_id, vItem.item_name, vItem.price, vItem.quantity, vItem.subtotal]);
+        INSERT INTO order_items (order_id, menu_item_id, item_name, price, quantity, subtotal, image_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [orderId, vItem.menu_item_id, vItem.item_name, vItem.price, vItem.quantity, vItem.subtotal, vItem.image_url || '']);
     }
 
     // Update table status to 'Order Placed' and link current order
@@ -472,7 +473,11 @@ router.get('/orders', async (req, res, next) => {
     // Fetch line items for each order
     for (const order of orders) {
       const [items] = await db.query(
-        'SELECT item_name, price, quantity, subtotal FROM order_items WHERE order_id = ?',
+        `SELECT oi.id, oi.menu_item_id, oi.item_name, oi.price, oi.quantity, oi.subtotal,
+                COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
+         FROM order_items oi
+         LEFT JOIN menu_items m ON oi.menu_item_id = m.id
+         WHERE oi.order_id = ?`,
         [order.id]
       );
       order.items = items;

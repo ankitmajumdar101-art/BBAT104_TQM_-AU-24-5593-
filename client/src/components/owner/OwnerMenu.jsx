@@ -17,8 +17,10 @@ import {
   DollarSign,
   Percent,
   Sparkles,
-  ShoppingBag
+  ShoppingBag,
+  Image as ImageIcon
 } from 'lucide-react';
+import DishImage, { PRESET_DISH_IMAGES } from '../common/DishImage';
 
 export default function OwnerMenu() {
   const [items, setItems] = useState([]);
@@ -577,16 +579,27 @@ export default function OwnerMenu() {
                         background: idx % 2 === 0 ? '#FFF' : '#FAFAFA'
                       }}
                     >
-                      {/* Name & Details */}
+                      {/* Name & Details with Dish Image */}
                       <td style={{ padding: '14px 18px' }}>
-                        <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '14px' }}>
-                          {item.name}
-                        </div>
-                        {item.description && (
-                          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', maxWidth: '320px' }}>
-                            {item.description}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <DishImage
+                            src={item.image_url}
+                            alt={item.name}
+                            category={item.category_name}
+                            size="md"
+                            style={{ borderRadius: '10px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '14px' }}>
+                              {item.name}
+                            </div>
+                            {item.description && (
+                              <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', maxWidth: '320px' }}>
+                                {item.description}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </td>
 
                       {/* Category */}
@@ -907,6 +920,79 @@ export default function OwnerMenu() {
                     </strong>
                   </div>
                 )}
+              </div>
+
+              {/* Dish Image URL & Preset Selection */}
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '800', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <ImageIcon size={14} /> DISH IMAGE (URL OR PRESET)
+                  </label>
+                  {itemForm.image_url && (
+                    <button
+                      type="button"
+                      onClick={() => setItemForm({ ...itemForm, image_url: '' })}
+                      style={{ background: 'transparent', border: 'none', color: '#EF4444', fontSize: '11px', cursor: 'pointer', fontWeight: '700' }}
+                    >
+                      Clear Image
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
+                  <DishImage
+                    src={itemForm.image_url}
+                    alt={itemForm.name || 'Preview'}
+                    size="md"
+                    style={{ borderRadius: '8px', border: '1px solid #CBD5E1', flexShrink: 0 }}
+                  />
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/... or paste image URL"
+                    value={itemForm.image_url || ''}
+                    onChange={(e) => setItemForm({ ...itemForm, image_url: e.target.value })}
+                    style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '12px' }}
+                  />
+                </div>
+
+                {/* 1-Click Preset Food Photos */}
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    Quick Preset Photos (1-Click Fill):
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '4px' }}>
+                    {PRESET_DISH_IMAGES.slice(0, 10).map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setItemForm(prev => ({
+                            ...prev,
+                            image_url: preset.url,
+                            name: prev.name ? prev.name : preset.name
+                          }));
+                        }}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          border: itemForm.image_url === preset.url ? '1px solid #7E22CE' : '1px solid #E2E8F0',
+                          background: itemForm.image_url === preset.url ? '#F3E8FF' : '#FFF',
+                          color: '#334155',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <span>{preset.emoji}</span>
+                        <span>{preset.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div>

@@ -15,6 +15,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import ReceiptModal from './ReceiptModal';
+import DishImage from './common/DishImage';
 
 export default function POSBilling({ user }) {
   const [menuItems, setMenuItems] = useState([]);
@@ -78,6 +79,8 @@ export default function POSBilling({ user }) {
         id: item.id,
         name: item.name,
         price: parseFloat(item.price),
+        image_url: item.image_url,
+        category_name: item.category_name,
         quantity: 1
       }];
     });
@@ -257,7 +260,6 @@ export default function POSBilling({ user }) {
               style={{
                 background: '#FFF',
                 borderRadius: '12px',
-                padding: '16px',
                 border: '1px solid #E2E8F0',
                 boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
                 display: 'flex',
@@ -266,7 +268,8 @@ export default function POSBilling({ user }) {
                 cursor: item.available ? 'pointer' : 'not-allowed',
                 opacity: item.available ? 1 : 0.6,
                 transition: 'all 0.2s',
-                position: 'relative'
+                position: 'relative',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
                 if (item.available) {
@@ -283,35 +286,58 @@ export default function POSBilling({ user }) {
                 }
               }}
             >
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <span style={{
+              {/* Dish Image Banner */}
+              <div style={{ position: 'relative', width: '100%', height: '110px', overflow: 'hidden' }}>
+                <DishImage
+                  src={item.image_url}
+                  alt={item.name}
+                  category={item.category_name}
+                  size="banner"
+                  style={{ height: '100%', borderRadius: '0' }}
+                />
+                {!item.available && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
                     fontSize: '10px',
-                    fontWeight: '700',
-                    color: '#64748B',
-                    background: '#F1F5F9',
-                    padding: '2px 8px',
-                    borderRadius: '4px'
+                    fontWeight: '800',
+                    color: '#FFF',
+                    background: '#EF4444',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
                   }}>
-                    {item.category_name}
-                  </span>
-                  {!item.available && (
-                    <span style={{ fontSize: '10px', fontWeight: '700', color: '#EF4444', background: '#FEE2E2', padding: '2px 6px', borderRadius: '4px' }}>
-                      OUT OF STOCK
-                    </span>
-                  )}
-                </div>
-                <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>
-                  {item.name}
-                </h4>
-                {item.description && (
-                  <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.4', marginBottom: '12px' }}>
-                    {item.description}
-                  </p>
+                    OUT OF STOCK
+                  </div>
                 )}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #F1F5F9' }}>
+              <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                    <span style={{
+                      fontSize: '10px',
+                      fontWeight: '700',
+                      color: '#64748B',
+                      background: '#F1F5F9',
+                      padding: '2px 8px',
+                      borderRadius: '4px'
+                    }}>
+                      {item.category_name}
+                    </span>
+                  </div>
+                  <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0' }}>
+                    {item.name}
+                  </h4>
+                  {item.description && (
+                    <p style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.4', margin: '0 0 8px 0' }}>
+                      {item.description}
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #F1F5F9' }}>
                 <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--primary)' }}>
                   ₹{parseFloat(item.price).toFixed(2)}
                 </span>
@@ -447,10 +473,20 @@ export default function POSBilling({ user }) {
                     border: '1px solid #E2E8F0'
                   }}
                 >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>{item.name}</div>
-                    <div style={{ fontSize: '11px', color: '#64748B' }}>
-                      ₹{item.price.toFixed(2)} × {item.quantity} = <strong>₹{(item.price * item.quantity).toFixed(2)}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                    <DishImage
+                      src={item.image_url}
+                      alt={item.name}
+                      size="sm"
+                      style={{ borderRadius: '6px', flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748B' }}>
+                        ₹{item.price.toFixed(2)} × {item.quantity} = <strong>₹{(item.price * item.quantity).toFixed(2)}</strong>
+                      </div>
                     </div>
                   </div>
 

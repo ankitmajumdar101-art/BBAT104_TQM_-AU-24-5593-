@@ -71,10 +71,14 @@ router.get('/overview', async (req, res, next) => {
       LIMIT 20
     `);
 
-    // Attach food line items (ONLY item_name and quantity)
+    // Attach food line items (dish image, item_name, quantity - hides financial data)
     for (const ord of attentionOrders) {
       const [items] = await db.query(
-        'SELECT item_name, quantity FROM order_items WHERE order_id = ? ORDER BY id ASC',
+        `SELECT oi.id, oi.item_name, oi.quantity,
+                COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
+         FROM order_items oi
+         LEFT JOIN menu_items m ON oi.menu_item_id = m.id
+         WHERE oi.order_id = ? ORDER BY oi.id ASC`,
         [ord.id]
       );
       ord.items = items;
@@ -154,7 +158,11 @@ router.get('/orders', async (req, res, next) => {
     // Attach items without prices or financial totals
     for (const ord of orders) {
       const [items] = await db.query(
-        'SELECT id, item_name, quantity FROM order_items WHERE order_id = ? ORDER BY id ASC',
+        `SELECT oi.id, oi.item_name, oi.quantity,
+                COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
+         FROM order_items oi
+         LEFT JOIN menu_items m ON oi.menu_item_id = m.id
+         WHERE oi.order_id = ? ORDER BY oi.id ASC`,
         [ord.id]
       );
       ord.items = items;
