@@ -135,6 +135,8 @@ export default function DishImage({
     defaultSizeStyle = { width: '100%', height: '140px', borderRadius: borderRadius || '12px' };
   } else if (size === 'card-banner') {
     defaultSizeStyle = { width: '100%', height: '120px', borderRadius: '12px 12px 0 0' };
+  } else if (size === 'menu-card') {
+    defaultSizeStyle = { width: '100%', height: '160px', borderRadius: '14px 14px 0 0' };
   }
 
   const emoji = getCategoryEmoji(category);
@@ -146,7 +148,7 @@ export default function DishImage({
         className={className}
         style={{
           ...defaultSizeStyle,
-          background: 'linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)',
+          background: 'linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -160,11 +162,11 @@ export default function DishImage({
         }}
         title={alt}
       >
-        <span style={{ fontSize: size === 'banner' || size === 'card-banner' ? '32px' : size === 'lg' ? '28px' : size === 'sm' ? '18px' : '22px' }}>
+        <span style={{ fontSize: size === 'banner' || size === 'card-banner' || size === 'menu-card' ? '36px' : size === 'lg' ? '28px' : size === 'sm' ? '18px' : '22px' }}>
           {emoji}
         </span>
-        {(size === 'banner' || size === 'card-banner') && (
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', marginTop: '4px' }}>
+        {(size === 'banner' || size === 'card-banner' || size === 'menu-card') && (
+          <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748B', marginTop: '6px', textAlign: 'center', padding: '0 8px' }}>
             {alt}
           </span>
         )}

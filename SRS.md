@@ -175,12 +175,12 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 ### 4.3 Stakeholder 3 — Cashier Requirements
 
 #### A. POS Billing Terminal
-* **SRS-CSH-01:** The system shall provide a rapid POS bill generation terminal with table selection, customer details, dish search, visual dish photo banners, and active cart item thumbnails.
+* **SRS-CSH-01:** The system shall provide a rapid POS bill generation terminal with table selection, customer details, dish search, and visual dish selection cards.
 * **SRS-CSH-02:** Subtotals, 5% GST tax (2.5% CGST + 2.5% SGST), authorized discounts, and grand totals shall be calculated exclusively on the backend server.
 * **SRS-CSH-03:** The system shall support Cash, Card, and UPI payment methods with change due calculation and dynamic UPI payment QR codes.
 
 #### B. Waiter Incoming Orders Billing Queue
-* **SRS-CSH-04:** The system shall provide a dedicated **Waiter Orders Queue** displaying incoming table orders submitted by floor waiters with status `Pending_Cashier`, itemized with dish thumbnail images, quantities, and line totals for rapid visual verification.
+* **SRS-CSH-04:** The system shall provide a dedicated **Waiter Orders Queue** displaying incoming table orders submitted by floor waiters with status `Pending_Cashier`, itemized with dish names, quantities, and line totals for rapid, distraction-free cashier calculation.
 * **SRS-CSH-05:** The Cashier shall be able to review ordered items, apply payment methods, calculate GST and discounts, and finalize the bill.
 * **SRS-CSH-06:** Upon finalization by Cashier, the system shall transition the order to `Completed`, forward the food ticket to Kitchen Chef (`kitchen_status: 'New'`), and flag the bill as ready for Waiter delivery.
 
@@ -200,19 +200,19 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 * **SRS-WTR-02:** The Waiter shall be able to assign/seat guests at an available table by recording customer name, phone number, and guest count.
 * **SRS-WTR-03:** The Waiter shall be able to clear/free a table once dining is concluded, resetting the table to `Available`.
 
-#### B. Visual Menu with Real-Time Prices & Discounts
-* **SRS-WTR-04:** The system shall present the full restaurant menu categorized by Starters, Main Course, Fast Food, Beverages, Desserts, and Chef Specials, displaying high-resolution dish photographs and fallback category icons.
-* **SRS-WTR-05:** Each dish card shall prominently feature a visual food image banner, standard unit price, promotional discount percentage badge (e.g. `10% OFF`), effective discounted price, and guest savings amount.
+#### B. Customer Menu Cards with Real-Time Prices & Discounts
+* **SRS-WTR-04:** The system shall present the full restaurant menu categorized by Starters, Main Course, Fast Food, Beverages, Desserts, and Chef Specials.
+* **SRS-WTR-05:** **Customer Visual Attraction (Menu Cards):** Each menu card shall prominently display a high-resolution, appetizing food photograph of the dish (with fallback category icon), bold dish title, promotional discount badge (e.g. `10% OFF`), standard price, customer offer price, and guest savings amount so customers can see exactly what the dish looks like before ordering.
 * **SRS-WTR-06:** Only dishes marked `available = 1` by kitchen/management shall be selectable for order entry.
 
 #### C. Order Taking & Dispatch to Cashier
-* **SRS-WTR-07:** The Waiter shall select items for a specific seated table, displaying added items in an interactive visual cart with dish thumbnails, adjustable quantities, and special cooking notes.
+* **SRS-WTR-07:** The Waiter shall select items for a specific seated table, displaying added items in a streamlined order tray with quantities and special cooking notes.
 * **SRS-WTR-08:** Submitting the order sets `order_status = 'Pending_Cashier'` and `kitchen_status = 'Pending_Bill'`, transmitting the ticket to the Cashier queue without exposing kitchen preparation until billed.
 
 #### D. Bill Receipt Delivery & Food Service
 * **SRS-WTR-09:** When the Cashier calculates the bill, the Waiter dashboard shall display a "Bill Ready" notification allowing the waiter to inspect and print the 80mm thermal receipt for the customer.
 * **SRS-WTR-10:** When the Kitchen Chef marks food `Ready`, the Waiter dashboard shall display a high-priority "Food Ready" alert banner.
-* **SRS-WTR-11:** The system shall display active orders with visual dish badges and thumbnails, enabling waiters to quickly identify food items to collect from the kitchen and deliver to the table upon marking `Served`.
+* **SRS-WTR-11:** The Waiter shall deliver dishes to the table and mark the order as `Served`, updating the table status to `Served`.
 
 ---
 
@@ -220,7 +220,7 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 
 #### A. Kitchen Display System (KDS)
 * **SRS-KIT-01:** The system shall provide a dedicated KDS screen displaying incoming customer orders in real time.
-* **SRS-KIT-02:** Kitchen cards shall show order number, table number, assigned floor waiter name, ordered dishes with visual dish thumbnail images, quantities, order timestamp, and special cooking notes.
+* **SRS-KIT-02:** Kitchen cards shall show order number, table number, assigned floor waiter name, ordered dishes, quantities, order timestamp, and special cooking notes in a clean, high-speed ticket format.
 * **SRS-KIT-03:** **Financial Information Hiding:** The KDS interface shall strictly hide item prices, subtotals, discounts, taxes, customer phone numbers, and payment modes.
 
 #### B. Finite Workflow State Transitions
@@ -335,13 +335,13 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 | **SRS-ADM-01 to 02** | `api/routes/users.js` & `AdminUsers.jsx` | Automated test asserting `HTTP 403` on Owner delete |
 | **SRS-ADM-03** | `api/routes/admin.js` & `AdminDashboard.jsx` | Automated test asserting `HTTP 403` on Admin menu/tax mutation |
 | **SRS-ADM-04 to 07** | `api/routes/backup.js`, `AuditLogs.jsx`, `ErrorLogs.jsx` | Disaster recovery & audit/error inspection tests |
-| **SRS-CSH-01 to 03** | `client/src/components/POSBilling.jsx` & `DishImage.jsx` | Visual POS cart test blocking out-of-stock items |
-| **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` & `DishImage.jsx` | Visual queue calculation test finalizing waiter orders into billed tickets |
+| **SRS-CSH-01 to 03** | `client/src/components/POSBilling.jsx` & `DishImage.jsx` | POS menu card visual selection & cart tests |
+| **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` | Streamlined queue calculation test finalizing waiter orders into billed tickets |
 | **SRS-WTR-01 to 03** | `client/src/components/waiter/WaiterDashboard.jsx` | Table map test verifying seating, capacity & clear actions |
-| **SRS-WTR-04 to 06** | `api/routes/waiter.js`, `WaiterDashboard.jsx` & `DishImage.jsx` | Visual menu testing verifying dish images, prices & discount badges |
-| **SRS-WTR-07 to 08** | `api/routes/waiter.js`, `WaiterDashboard.jsx` & `DishImage.jsx` | Visual order submission test setting status `Pending_Cashier` |
-| **SRS-WTR-09 to 11** | `WaiterDashboard.jsx`, `ReceiptModal.jsx` & `DishImage.jsx` | Visual dish service tracking & food ready serving verification |
-| **SRS-KIT-01 to 06** | `client/src/components/kitchen/KitchenOrderQueue.jsx` & `DishImage.jsx` | Visual KDS state transition test (`New` → `Prep` → `Ready`) with waiter alert |
+| **SRS-WTR-04 to 06** | `api/routes/waiter.js`, `WaiterDashboard.jsx` & `DishImage.jsx` | Visual menu card testing verifying appetizing dish photos, names, prices & discount badges |
+| **SRS-WTR-07 to 08** | `api/routes/waiter.js` & `WaiterDashboard.jsx` | Streamlined order submission test setting status `Pending_Cashier` |
+| **SRS-WTR-09 to 11** | `WaiterDashboard.jsx` & `ReceiptModal.jsx` | Thermal bill print & food ready serving verification |
+| **SRS-KIT-01 to 06** | `client/src/components/kitchen/KitchenOrderQueue.jsx` | High-speed KDS ticket state transition test (`New` → `Prep` → `Ready`) with waiter alert |
 
 ---
 

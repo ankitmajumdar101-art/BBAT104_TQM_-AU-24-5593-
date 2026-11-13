@@ -1014,26 +1014,53 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                     key={dish.id}
                     style={{
                       background: '#FFF',
-                      borderRadius: '14px',
-                      border: '1px solid #E2E8F0',
+                      borderRadius: '16px',
+                      border: inCart ? '2px solid #7E22CE' : '1px solid #E2E8F0',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                      boxShadow: inCart ? '0 6px 20px rgba(126, 34, 206, 0.15)' : '0 2px 10px rgba(0,0,0,0.04)',
                       position: 'relative',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      transition: 'all 0.25s ease'
                     }}
                   >
                     {/* Top Dish Image Banner */}
-                    <div style={{ position: 'relative', width: '100%', height: '135px', overflow: 'hidden' }}>
+                    <div style={{ position: 'relative', width: '100%', height: '160px', overflow: 'hidden' }}>
                       <DishImage
                         src={dish.image_url}
                         alt={dish.name}
                         category={dish.category_name}
-                        size="banner"
-                        style={{ height: '100%', borderRadius: '0' }}
+                        size="menu-card"
+                        style={{ height: '100%', borderRadius: '15px 15px 0 0' }}
                       />
-                      {/* Discount Ribbon/Badge if discount is available */}
+                      {/* Gradient overlay for contrast */}
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.2) 100%)',
+                        pointerEvents: 'none'
+                      }} />
+
+                      {/* Category Badge on image */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        background: 'rgba(15, 23, 42, 0.75)',
+                        backdropFilter: 'blur(4px)',
+                        color: '#FFF',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        padding: '3px 10px',
+                        borderRadius: '999px',
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase'
+                      }}>
+                        {dish.category_name}
+                      </div>
+
+                      {/* Discount Badge on image */}
                       {hasDiscount && (
                         <div style={{
                           position: 'absolute',
@@ -1041,104 +1068,103 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                           right: '10px',
                           background: '#EF4444',
                           color: '#FFF',
-                          fontSize: '10px',
+                          fontSize: '11px',
                           fontWeight: '900',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
+                          padding: '4px 9px',
+                          borderRadius: '8px',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '3px',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)'
+                          gap: '4px',
+                          boxShadow: '0 2px 10px rgba(239, 68, 68, 0.5)'
                         }}>
-                          <Tag size={10} />
+                          <Tag size={11} />
                           <span>{parseFloat(dish.discount_percent).toFixed(0)}% OFF</span>
                         </div>
                       )}
                     </div>
 
-                    <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between', gap: '12px' }}>
+                    {/* Dish Info & Content */}
+                    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between', gap: '14px' }}>
                       <div>
-                        <div style={{ fontSize: '11px', fontWeight: '800', color: '#7E22CE', textTransform: 'uppercase', marginBottom: '2px' }}>
-                          {dish.category_name}
-                        </div>
-                        <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', margin: '0 0 6px 0' }}>
+                        <h4 style={{ fontSize: '16px', fontWeight: '900', color: '#0F172A', margin: '0 0 6px 0', lineHeight: '1.3' }}>
                           {dish.name}
                         </h4>
                         {dish.description && (
-                          <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 8px 0', lineHeight: '1.4' }}>
+                          <p style={{ fontSize: '12px', color: '#64748B', margin: '0', lineHeight: '1.45' }}>
                             {dish.description}
                           </p>
                         )}
                       </div>
 
-                    <div>
-                      {/* Price Display */}
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '10px' }}>
-                        {hasDiscount ? (
-                          <>
-                            <span style={{ fontSize: '18px', fontWeight: '900', color: '#0F172A' }}>
-                              ₹{dish.discounted_price.toFixed(2)}
-                            </span>
-                            <span style={{ fontSize: '12px', color: '#94A3B8', textDecoration: 'line-through' }}>
+                      <div>
+                        {/* Price Display */}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '12px' }}>
+                          {hasDiscount ? (
+                            <>
+                              <span style={{ fontSize: '20px', fontWeight: '900', color: '#0F172A' }}>
+                                ₹{dish.discounted_price.toFixed(2)}
+                              </span>
+                              <span style={{ fontSize: '13px', color: '#94A3B8', textDecoration: 'line-through' }}>
+                                ₹{dish.price.toFixed(2)}
+                              </span>
+                              <span style={{ fontSize: '11px', color: '#16A34A', fontWeight: '800', background: '#DCFCE7', padding: '2px 6px', borderRadius: '4px' }}>
+                                Save ₹{dish.discount_amount.toFixed(2)}
+                              </span>
+                            </>
+                          ) : (
+                            <span style={{ fontSize: '20px', fontWeight: '900', color: '#0F172A' }}>
                               ₹{dish.price.toFixed(2)}
                             </span>
-                            <span style={{ fontSize: '11px', color: '#16A34A', fontWeight: '700' }}>
-                              Save ₹{dish.discount_amount.toFixed(2)}
+                          )}
+                        </div>
+
+                        {/* Add / Qty Controls */}
+                        {inCart ? (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F3E8FF', border: '1px solid #D8B4FE', borderRadius: '10px', padding: '4px 10px' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateCartQty(dish.id, -1)}
+                              style={{ background: '#FFF', border: '1px solid #D8B4FE', borderRadius: '6px', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7E22CE' }}
+                            >
+                              <Minus size={15} />
+                            </button>
+                            <span style={{ fontWeight: '900', color: '#6B21A8', fontSize: '15px' }}>
+                              {inCart.quantity} in order
                             </span>
-                          </>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateCartQty(dish.id, 1)}
+                              style={{ background: '#FFF', border: '1px solid #D8B4FE', borderRadius: '6px', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7E22CE' }}
+                            >
+                              <Plus size={15} />
+                            </button>
+                          </div>
                         ) : (
-                          <span style={{ fontSize: '18px', fontWeight: '900', color: '#0F172A' }}>
-                            ₹{dish.price.toFixed(2)}
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleAddToCart(dish)}
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              borderRadius: '10px',
+                              background: 'linear-gradient(135deg, #7E22CE 0%, #6B21A8 100%)',
+                              border: 'none',
+                              color: '#FFF',
+                              fontWeight: '800',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              boxShadow: '0 2px 8px rgba(126, 34, 206, 0.25)'
+                            }}
+                          >
+                            <Plus size={15} />
+                            <span>Add to Order</span>
+                          </button>
                         )}
                       </div>
-
-                      {/* Add / Qty Controls */}
-                      {inCart ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F3E8FF', borderRadius: '8px', padding: '4px 8px' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateCartQty(dish.id, -1)}
-                            style={{ background: '#FFF', border: '1px solid #D8B4FE', borderRadius: '6px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7E22CE' }}
-                          >
-                            <Minus size={14} />
-                          </button>
-                          <span style={{ fontWeight: '800', color: '#6B21A8', fontSize: '14px' }}>
-                            {inCart.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateCartQty(dish.id, 1)}
-                            style={{ background: '#FFF', border: '1px solid #D8B4FE', borderRadius: '6px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7E22CE' }}
-                          >
-                            <Plus size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleAddToCart(dish)}
-                          style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            background: '#F8FAFC',
-                            border: '1px solid #CBD5E1',
-                            color: '#1E293B',
-                            fontWeight: '700',
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px'
-                          }}
-                        >
-                          <Plus size={14} />
-                          <span>Add to Order</span>
-                        </button>
-                      )}
-                    </div>
                     </div>
                   </div>
                 );
@@ -1272,31 +1298,22 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '8px 0',
+                      padding: '6px 0',
                       borderBottom: '1px dashed #E2E8F0',
-                      fontSize: '12px',
-                      gap: '8px'
+                      fontSize: '12px'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                      <DishImage
-                        src={item.image_url}
-                        alt={item.name}
-                        size="sm"
-                        style={{ borderRadius: '6px', flexShrink: 0 }}
-                      />
-                      <div style={{ flex: 1, minWidth: 0, paddingRight: '4px' }}>
-                        <div style={{ fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {item.name}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#64748B' }}>
-                          {item.quantity} × ₹{item.discounted_price.toFixed(2)}
-                          {item.discount_percent > 0 && (
-                            <span style={{ color: '#16A34A', marginLeft: '4px', fontWeight: '700' }}>
-                              (-{parseFloat(item.discount_percent).toFixed(0)}%)
-                            </span>
-                          )}
-                        </div>
+                    <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
+                      <div style={{ fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748B' }}>
+                        {item.quantity} × ₹{item.discounted_price.toFixed(2)}
+                        {item.discount_percent > 0 && (
+                          <span style={{ color: '#16A34A', marginLeft: '4px', fontWeight: '700' }}>
+                            (-{parseFloat(item.discount_percent).toFixed(0)}%)
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -1607,40 +1624,10 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                       </div>
                     </div>
 
-                    {/* Items Breakdown with Visual Badges / Thumbnails */}
-                    <div>
-                      <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
-                        ORDERED DISHES ({ord.items?.length || 0}):
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        {ord.items?.map((i, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              background: '#F8FAFC',
-                              border: '1px solid #E2E8F0',
-                              padding: '3px 8px 3px 4px',
-                              borderRadius: '8px'
-                            }}
-                          >
-                            <DishImage
-                              src={i.image_url}
-                              alt={i.item_name}
-                              size="sm"
-                              style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', borderRadius: '5px' }}
-                            />
-                            <span style={{ fontWeight: '800', fontSize: '12px', color: '#0F172A' }}>
-                              {i.quantity}x
-                            </span>
-                            <span style={{ fontSize: '12px', color: '#334155', fontWeight: '600' }}>
-                              {i.item_name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                    {/* Items Breakdown */}
+                    <div style={{ fontSize: '12px', color: '#475569' }}>
+                      <span style={{ fontWeight: '700', color: '#0F172A' }}>Items: </span>
+                      {ord.items?.map(i => `${i.quantity}x ${i.item_name}`).join(', ')}
                     </div>
 
                     {/* Operational Action Controls */}

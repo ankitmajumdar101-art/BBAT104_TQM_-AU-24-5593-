@@ -579,27 +579,16 @@ export default function OwnerMenu() {
                         background: idx % 2 === 0 ? '#FFF' : '#FAFAFA'
                       }}
                     >
-                      {/* Name & Details with Dish Image */}
+                      {/* Name & Details */}
                       <td style={{ padding: '14px 18px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <DishImage
-                            src={item.image_url}
-                            alt={item.name}
-                            category={item.category_name}
-                            size="md"
-                            style={{ borderRadius: '10px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}
-                          />
-                          <div>
-                            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '14px' }}>
-                              {item.name}
-                            </div>
-                            {item.description && (
-                              <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', maxWidth: '320px' }}>
-                                {item.description}
-                              </div>
-                            )}
-                          </div>
+                        <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '14px' }}>
+                          {item.name}
                         </div>
+                        {item.description && (
+                          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', maxWidth: '320px' }}>
+                            {item.description}
+                          </div>
+                        )}
                       </td>
 
                       {/* Category */}

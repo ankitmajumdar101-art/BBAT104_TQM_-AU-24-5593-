@@ -10,7 +10,6 @@ import {
   Bell, 
   Utensils 
 } from 'lucide-react';
-import DishImage from '../common/DishImage';
 
 export default function KitchenOrderQueue({ status, title, subtitle, nextStatus, nextButtonLabel, nextButtonIcon: NextIcon, onOrderUpdated }) {
   const [orders, setOrders] = useState([]);
@@ -308,18 +307,10 @@ export default function KitchenOrderQueue({ status, title, subtitle, nextStatus,
                     gap: '6px'
                   }}>
                     {(order.items || []).map((item, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                          <DishImage
-                            src={item.image_url}
-                            alt={item.item_name}
-                            size="sm"
-                            style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px', borderRadius: '6px' }}
-                          />
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {item.item_name}
-                          </span>
-                        </div>
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#1E293B' }}>
+                          {item.item_name}
+                        </span>
                         <span style={{
                           background: '#0F172A',
                           color: '#FFF',
