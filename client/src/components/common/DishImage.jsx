@@ -21,10 +21,16 @@ export const PRESET_DISH_IMAGES = [
     url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80'
   },
   {
+    name: 'Tandoori Stuffed Soya Chaap',
+    category: 'Chef Specials',
+    emoji: '🍢',
+    url: 'https://images.unsplash.com/photo-1628294895950-9805252327bc?auto=format&fit=crop&w=600&q=80'
+  },
+  {
     name: 'Tandoori Soya Chaap',
     category: 'Chef Specials',
     emoji: '🍢',
-    url: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=600&q=80'
+    url: 'https://images.unsplash.com/photo-1628294895950-9805252327bc?auto=format&fit=crop&w=600&q=80'
   },
   {
     name: 'Chicken Biryani',
@@ -48,7 +54,7 @@ export const PRESET_DISH_IMAGES = [
     name: 'Butter Naan',
     category: 'Main Course',
     emoji: '🫓',
-    url: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&w=600&q=80'
+    url: 'https://images.unsplash.com/photo-1680359873724-8062c6806704?auto=format&fit=crop&w=600&q=80'
   },
   {
     name: 'Margherita Pizza',

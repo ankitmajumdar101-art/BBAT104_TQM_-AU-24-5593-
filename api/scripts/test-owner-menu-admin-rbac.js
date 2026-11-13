@@ -160,7 +160,13 @@ async function testRBAC() {
   if (adminBackupsRes.status !== 200) throw new Error('Admin failed to access backups');
 
   console.log('\n🎉🎉 ALL RBAC PRIVILEGE SEPARATION TESTS PASSED PERFECTLY! 🎉🎉\n');
-  process.exit(0);
+  if (server) {
+    server.close(() => {
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
 }
 
 testRBAC().catch(err => {
