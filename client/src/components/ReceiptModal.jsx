@@ -2,6 +2,7 @@ import React from 'react';
 import { Printer, X, CheckCircle2, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { printReceiptElement } from '../utils/printReceipt';
+import DishImage from './common/DishImage';
 
 export default function ReceiptModal({ order, onClose }) {
   if (!order) return null;
@@ -118,7 +119,17 @@ export default function ReceiptModal({ order, onClose }) {
               <tbody>
                 {(order.items || []).map((it, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px dotted #E2E8F0' }}>
-                    <td style={{ padding: '6px 0' }}>{it.item_name}</td>
+                    <td style={{ padding: '6px 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <DishImage
+                          src={it.image_url}
+                          alt={it.item_name}
+                          size="sm"
+                          style={{ width: '22px', height: '22px', minWidth: '22px', minHeight: '22px', borderRadius: '4px' }}
+                        />
+                        <span>{it.item_name}</span>
+                      </div>
+                    </td>
                     <td style={{ textAlign: 'center' }}>{it.quantity}</td>
                     <td style={{ textAlign: 'right' }}>₹{parseFloat(it.price).toFixed(2)}</td>
                     <td style={{ textAlign: 'right', fontWeight: '600' }}>₹{parseFloat(it.subtotal).toFixed(2)}</td>

@@ -473,10 +473,28 @@ export default function POSBilling({ user }) {
                     border: '1px solid #E2E8F0'
                   }}
                 >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>{item.name}</div>
-                    <div style={{ fontSize: '11px', color: '#64748B' }}>
-                      ₹{item.price.toFixed(2)} × {item.quantity} = <strong>₹{(item.price * item.quantity).toFixed(2)}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0, paddingRight: '6px' }}>
+                    <DishImage
+                      src={item.image_url}
+                      alt={item.name}
+                      category={item.category_name}
+                      size="sm"
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        minWidth: '38px',
+                        minHeight: '38px',
+                        borderRadius: '8px',
+                        border: '1px solid #CBD5E1'
+                      }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748B' }}>
+                        ₹{item.price.toFixed(2)} × {item.quantity} = <strong>₹{(item.price * item.quantity).toFixed(2)}</strong>
+                      </div>
                     </div>
                   </div>
 

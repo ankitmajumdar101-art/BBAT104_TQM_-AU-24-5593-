@@ -10,6 +10,7 @@ import {
   Bell, 
   Utensils 
 } from 'lucide-react';
+import DishImage from '../common/DishImage';
 
 export default function KitchenOrderQueue({ status, title, subtitle, nextStatus, nextButtonLabel, nextButtonIcon: NextIcon, onOrderUpdated }) {
   const [orders, setOrders] = useState([]);
@@ -307,17 +308,43 @@ export default function KitchenOrderQueue({ status, title, subtitle, nextStatus,
                     gap: '6px'
                   }}>
                     {(order.items || []).map((item, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#1E293B' }}>
-                          {item.item_name}
-                        </span>
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '4px 0',
+                          borderBottom: idx === order.items.length - 1 ? 'none' : '1px dashed #E2E8F0'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                          <DishImage
+                            src={item.image_url}
+                            alt={item.item_name}
+                            size="sm"
+                            style={{
+                              width: '34px',
+                              height: '34px',
+                              minWidth: '34px',
+                              minHeight: '34px',
+                              borderRadius: '6px',
+                              border: '1px solid #CBD5E1'
+                            }}
+                          />
+                          <span style={{ fontSize: '13px', fontWeight: '800', color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.item_name}
+                          </span>
+                        </div>
                         <span style={{
                           background: '#0F172A',
                           color: '#FFF',
                           borderRadius: '6px',
                           padding: '2px 8px',
                           fontSize: '12px',
-                          fontWeight: '800'
+                          fontWeight: '800',
+                          flexShrink: 0
                         }}>
                           ×{item.quantity}
                         </span>

@@ -6,13 +6,13 @@ export const PRESET_DISH_IMAGES = [
     name: 'Paneer Tikka',
     category: 'Starters',
     emoji: '🧀',
-    url: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=600&q=80'
+    url: 'https://images.unsplash.com/photo-1666001120694-3ebe8fd207be?auto=format&fit=crop&w=600&q=80'
   },
   {
     name: 'Veg Spring Rolls',
     category: 'Starters',
     emoji: '🌯',
-    url: 'https://images.unsplash.com/photo-1548869206-93b036288d7e?auto=format&fit=crop&w=600&q=80'
+    url: 'https://images.unsplash.com/photo-1786174045051-673a64444d72?auto=format&fit=crop&w=600&q=80'
   },
   {
     name: 'Hot Tomato Soup',
@@ -90,10 +90,10 @@ export const PRESET_DISH_IMAGES = [
     name: 'Gulab Jamun',
     category: 'Desserts',
     emoji: '🍯',
-    url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80'
+    url: 'https://images.unsplash.com/photo-1666190092159-3171cf0fbb12?auto=format&fit=crop&w=600&q=80'
   },
   {
-    name: 'Brownie with Ice Cream',
+    name: 'Chocolate Brownie with Ice Cream',
     category: 'Desserts',
     emoji: '🍫',
     url: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80'

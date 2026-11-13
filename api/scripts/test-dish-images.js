@@ -176,6 +176,7 @@ async function runTests() {
 
     // Test 6: Restaurant Owner updates dish image URL
     console.log('\nTest 6: Owner updates dish with a custom image URL...');
+    const originalImage = targetDish.image_url;
     const testCustomImage = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80';
     const updateRes = await makeRequest({
       hostname: 'localhost',
@@ -202,6 +203,25 @@ async function runTests() {
       throw new Error(`Database image_url mismatch: ${dbCheck[0].image_url}`);
     }
     console.log(`✅ PASS: Restaurant Owner successfully updated dish image URL!`);
+
+    // Restore original dish image immediately so tests never corrupt live menu
+    await makeRequest({
+      hostname: 'localhost',
+      port: PORT,
+      path: `/api/menu/${targetDish.id}`,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${ownerToken}`
+      }
+    }, {
+      name: targetDish.name,
+      category_id: targetDish.category_id,
+      price: targetDish.price,
+      discount_percent: targetDish.discount_percent,
+      image_url: originalImage
+    });
+    console.log(`✅ RESTORED: Successfully restored original dish image for "${targetDish.name}".`);
 
     console.log('\n🎉🎉 ALL 6 DISH IMAGE & VISUAL ORDER TESTS PASSED PERFECTLY! 🎉🎉\n');
 

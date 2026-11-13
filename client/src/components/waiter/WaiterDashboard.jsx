@@ -1298,22 +1298,38 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '6px 0',
+                      padding: '8px 0',
                       borderBottom: '1px dashed #E2E8F0',
                       fontSize: '12px'
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
-                      <div style={{ fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.name}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#64748B' }}>
-                        {item.quantity} × ₹{item.discounted_price.toFixed(2)}
-                        {item.discount_percent > 0 && (
-                          <span style={{ color: '#16A34A', marginLeft: '4px', fontWeight: '700' }}>
-                            (-{parseFloat(item.discount_percent).toFixed(0)}%)
-                          </span>
-                        )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, paddingRight: '8px' }}>
+                      <DishImage
+                        src={item.image_url}
+                        alt={item.name}
+                        category={item.category_name}
+                        size="sm"
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          minWidth: '36px',
+                          minHeight: '36px',
+                          borderRadius: '8px',
+                          border: '1px solid #CBD5E1'
+                        }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.name}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748B' }}>
+                          {item.quantity} × ₹{item.discounted_price.toFixed(2)}
+                          {item.discount_percent > 0 && (
+                            <span style={{ color: '#16A34A', marginLeft: '4px', fontWeight: '700' }}>
+                              (-{parseFloat(item.discount_percent).toFixed(0)}%)
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -1624,10 +1640,38 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                       </div>
                     </div>
 
-                    {/* Items Breakdown */}
-                    <div style={{ fontSize: '12px', color: '#475569' }}>
-                      <span style={{ fontWeight: '700', color: '#0F172A' }}>Items: </span>
-                      {ord.items?.map(i => `${i.quantity}x ${i.item_name}`).join(', ')}
+                    {/* Items Breakdown with Visual Dish Badges */}
+                    <div>
+                      <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748B', display: 'block', marginBottom: '6px', letterSpacing: '0.4px' }}>
+                        DISHES IN ORDER ({ord.items?.length || 0}):
+                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                        {ord.items?.map((i, itmIdx) => (
+                          <div
+                            key={itmIdx}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              background: '#F8FAFC',
+                              border: '1px solid #E2E8F0',
+                              borderRadius: '8px',
+                              padding: '3px 8px 3px 4px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                            }}
+                          >
+                            <DishImage
+                              src={i.image_url}
+                              alt={i.item_name}
+                              size="sm"
+                              style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', borderRadius: '6px' }}
+                            />
+                            <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A' }}>
+                              {i.quantity}× {i.item_name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Operational Action Controls */}

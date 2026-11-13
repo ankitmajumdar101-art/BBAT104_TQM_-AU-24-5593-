@@ -137,10 +137,10 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 
 #### E. Read-Only Bill Surveillance
 * **SRS-OWN-13:** The system shall provide an audit surveillance table displaying all historical bills with customer names, table numbers, cashier associations, totals, and timestamps.
-* **SRS-OWN-14:** **Zero-Tamper Mode:** The Owner shall be able to inspect full line items and print duplicate receipt copies, but shall have zero interface controls or API capabilities to modify, recalculate, or delete finalized bills.
+* **SRS-OWN-14:** **Zero-Tamper Mode & Visual Bill Audit:** The Owner shall be able to inspect full itemized receipts with dish thumbnails beside item names and print duplicate receipt copies, but shall have zero interface controls or API capabilities to modify, recalculate, or delete finalized bills.
 
 #### F. Food Menu Catalog & Category Management
-* **SRS-OWN-15:** The system shall grant the Restaurant Owner exclusive commercial authority to create, view, update, and remove categories and dishes in the restaurant menu catalog, including dish image URLs, 1-click curated preset food photos, and live dish card previews.
+* **SRS-OWN-15:** **Menu Catalog & Visual Food Identification:** The system shall grant the Restaurant Owner exclusive commercial authority to create, view, update, and remove categories and dishes in the restaurant menu catalog. The menu management table shall prominently display 46x46 high-resolution dish thumbnails beside every dish name, alongside category, standard price, and discount percentage. Add/Edit dish modals shall provide live image preview and 1-click curated preset food photos with 100% authentic food matching.
 * **SRS-OWN-16:** The Owner shall be able to toggle real-time dish availability (`available = 0/1`) to prevent orders of out-of-stock items across POS and Waiter stations.
 
 #### G. Customer Promotional Offers & Discount Management
@@ -175,13 +175,13 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 ### 4.3 Stakeholder 3 — Cashier Requirements
 
 #### A. POS Billing Terminal
-* **SRS-CSH-01:** The system shall provide a rapid POS bill generation terminal with table selection, customer details, dish search, and visual dish selection cards.
+* **SRS-CSH-01:** **POS Billing Terminal with Visual Selection & Cart:** The system shall provide a rapid POS bill generation terminal with table selection, customer details, dish search, and visual dish selection cards in the menu catalog AND 38x38 dish thumbnails in the right-hand active order cart beside each item name, unit price, quantity, and line total.
 * **SRS-CSH-02:** Subtotals, 5% GST tax (2.5% CGST + 2.5% SGST), authorized discounts, and grand totals shall be calculated exclusively on the backend server.
-* **SRS-CSH-03:** The system shall support Cash, Card, and UPI payment methods with change due calculation and dynamic UPI payment QR codes.
+* **SRS-CSH-03:** The system shall support Cash, Card, and UPI payment methods with change due calculation, dynamic UPI payment QR codes, and itemized customer receipt modal featuring dish thumbnails.
 
 #### B. Waiter Incoming Orders Billing Queue
-* **SRS-CSH-04:** The system shall provide a dedicated **Waiter Orders Queue** displaying incoming table orders submitted by floor waiters with status `Pending_Cashier`, itemized with dish names, quantities, and line totals for rapid, distraction-free cashier calculation.
-* **SRS-CSH-05:** The Cashier shall be able to review ordered items, apply payment methods, calculate GST and discounts, and finalize the bill.
+* **SRS-CSH-04:** **Waiter Incoming Orders Queue with Visual Dish Identification:** The system shall provide a dedicated **Waiter Orders Queue** displaying incoming table orders submitted by floor waiters with status `Pending_Cashier`, itemized with 30x30 dish thumbnails alongside food names, quantities, and line totals for rapid, distraction-free cashier calculation.
+* **SRS-CSH-05:** The Cashier shall be able to review ordered items with visual dish confirmation, apply payment methods, calculate GST and discounts, and finalize the bill.
 * **SRS-CSH-06:** Upon finalization by Cashier, the system shall transition the order to `Completed`, forward the food ticket to Kitchen Chef (`kitchen_status: 'New'`), and flag the bill as ready for Waiter delivery.
 
 ---
@@ -202,17 +202,18 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 
 #### B. Customer Menu Cards with Real-Time Prices & Discounts
 * **SRS-WTR-04:** The system shall present the full restaurant menu categorized by Starters, Main Course, Fast Food, Beverages, Desserts, and Chef Specials.
-* **SRS-WTR-05:** **Customer Visual Attraction (Menu Cards):** Each menu card shall prominently display a high-resolution, appetizing food photograph of the dish (with fallback category icon), bold dish title, promotional discount badge (e.g. `10% OFF`), standard price, customer offer price, and guest savings amount so customers can see exactly what the dish looks like before ordering.
+* **SRS-WTR-05:** **Customer Visual Attraction & Authentic Dish Matching (Zero Mismatch Policy):** Each menu card shall prominently display a high-resolution, 100% authentic photograph of the exact dish (e.g. Paneer Tikka displays charred marinated grilled paneer cubes, Veg Spring Rolls displays crisp golden fried rolls, Cold Coffee displays tall chilled iced coffee frappe, Gulab Jamun displays golden-brown sweet milk dumplings in sugar syrup), with category fallback icon, bold dish title, promotional discount badge (e.g. `10% OFF`), standard price, customer offer price, and guest savings amount so customers see exactly what their food looks like.
 * **SRS-WTR-06:** Only dishes marked `available = 1` by kitchen/management shall be selectable for order entry.
 
 #### C. Order Taking & Dispatch to Cashier
-* **SRS-WTR-07:** The Waiter shall select items for a specific seated table, displaying added items in a streamlined order tray with quantities and special cooking notes.
+* **SRS-WTR-07:** **Order Taking Tray with Visual Dish Thumbnails:** The Waiter shall select items for a specific seated table, displaying added items in a streamlined order tray with 36x36 dish thumbnails, quantities, price, savings, and special cooking notes.
 * **SRS-WTR-08:** Submitting the order sets `order_status = 'Pending_Cashier'` and `kitchen_status = 'Pending_Bill'`, transmitting the ticket to the Cashier queue without exposing kitchen preparation until billed.
 
 #### D. Bill Receipt Delivery & Food Service
 * **SRS-WTR-09:** When the Cashier calculates the bill, the Waiter dashboard shall display a "Bill Ready" notification allowing the waiter to inspect and print the 80mm thermal receipt for the customer.
 * **SRS-WTR-10:** When the Kitchen Chef marks food `Ready`, the Waiter dashboard shall display a high-priority "Food Ready" alert banner.
 * **SRS-WTR-11:** The Waiter shall deliver dishes to the table and mark the order as `Served`, updating the table status to `Served`.
+* **SRS-WTR-12:** **Active Orders Progression Tracker with Visual Dish Badges:** The Waiter live orders tracker shall display visual dish badges with 26x26 dish thumbnails and quantities for every active order, keeping the floor staff visually connected with the dishes ordered.
 
 ---
 
@@ -220,7 +221,7 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 
 #### A. Kitchen Display System (KDS)
 * **SRS-KIT-01:** The system shall provide a dedicated KDS screen displaying incoming customer orders in real time.
-* **SRS-KIT-02:** Kitchen cards shall show order number, table number, assigned floor waiter name, ordered dishes, quantities, order timestamp, and special cooking notes in a clean, high-speed ticket format.
+* **SRS-KIT-02:** **Kitchen Ticket Cards with Visual Dish Thumbnails:** Kitchen cards shall show order number, table number, assigned floor waiter name, 34x34 visual dish thumbnails directly beside each dish item name, quantities, order timestamp, and special cooking notes in a clean, high-speed ticket format so chefs instantly recognize the culinary preparation without confusing dishes.
 * **SRS-KIT-03:** **Financial Information Hiding:** The KDS interface shall strictly hide item prices, subtotals, discounts, taxes, customer phone numbers, and payment modes.
 
 #### B. Finite Workflow State Transitions
@@ -239,6 +240,7 @@ In compliance with TQM Quality Goal Q01, every quality commitment is mapped to a
 | :--- | :--- | :--- | :--- |
 | **Billing Accuracy** | Discrepancies between item rates, quantities, and bill grand total | **0 Discrepancies (100% Precision)** | Automated server-side unit tests and decimal arithmetic validation |
 | **GST Tax Compliance** | Precision of 2.5% CGST and 2.5% SGST itemization on all saved bills | **100% Statutory Compliance** | Automated verification against Indian GST statutory rules |
+| **Food Image Fidelity & Matching Invariant** | Dish photographs authentically matching the specific dish named | **100% Authentic Matching (0 Mismatches)** | Automated database verification and visual presentation audits across Owner, Cashier, Waiter, and Kitchen modules |
 | **Commercial Separation Invariant** | Attempts by Admin to mutate menu items or tax/billing settings | **0 Allowed (100% Blocked)** | Route-level JWT RBAC returning `HTTP 403 Forbidden` with audit logging |
 | **Owner Protection Invariant** | Unauthorized attempts by Admin to delete/demote Owner | **0 Allowed (100% Blocked)** | Route-level JWT RBAC middleware returning `HTTP 403 Forbidden` |
 | **Waiter Handoff Integrity** | Synchronization across Waiter $\to$ Cashier $\to$ Kitchen $\to$ Customer | **100% Ticket Traceability** | Automated integration tests tracking order lifecycle states |
@@ -329,19 +331,19 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 | **SRS-OWN-01 to 04** | `client/src/components/owner/OwnerOverview.jsx` | Integration test verifying aggregated SQL metrics |
 | **SRS-OWN-05 to 08** | `client/src/components/owner/OwnerSalesReports.jsx` | Verified CSV export and letterhead print formatting |
 | **SRS-OWN-09 to 12** | `client/src/components/owner/OwnerProfitLoss.jsx` | Mathematical verification of Sales minus Expenses |
-| **SRS-OWN-13 to 14** | `client/src/components/owner/OwnerBillHistory.jsx` | Read-only audit verification; no edit/delete endpoints |
-| **SRS-OWN-15 to 18** | `api/routes/menu.js`, `OwnerMenu.jsx` & `DishImage.jsx` | Owner menu CRUD, dish images, offer presets & discount calculation tests |
+| **SRS-OWN-13 to 14** | `client/src/components/owner/OwnerBillHistory.jsx` & `DishImage.jsx` | Read-only audit verification and itemized receipt modal with dish thumbnails |
+| **SRS-OWN-15 to 18** | `api/routes/menu.js`, `OwnerMenu.jsx` & `DishImage.jsx` | Owner menu catalog table with dish thumbnails, CRUD, authentic photo presets & discount tests |
 | **SRS-OWN-19 to 20** | `api/routes/owner.js` & `OwnerBillingSettings.jsx` | Owner tax/GST and discount limit configuration tests |
 | **SRS-ADM-01 to 02** | `api/routes/users.js` & `AdminUsers.jsx` | Automated test asserting `HTTP 403` on Owner delete |
 | **SRS-ADM-03** | `api/routes/admin.js` & `AdminDashboard.jsx` | Automated test asserting `HTTP 403` on Admin menu/tax mutation |
 | **SRS-ADM-04 to 07** | `api/routes/backup.js`, `AuditLogs.jsx`, `ErrorLogs.jsx` | Disaster recovery & audit/error inspection tests |
-| **SRS-CSH-01 to 03** | `client/src/components/POSBilling.jsx` & `DishImage.jsx` | POS menu card visual selection & cart tests |
-| **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` | Streamlined queue calculation test finalizing waiter orders into billed tickets |
+| **SRS-CSH-01 to 03** | `client/src/components/POSBilling.jsx`, `ReceiptModal.jsx` & `DishImage.jsx` | POS menu card selection, order cart with dish thumbnails & printable receipt tests |
+| **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` & `DishImage.jsx` | Waiter queue billing calculation test with dish thumbnails finalizing into billed tickets |
 | **SRS-WTR-01 to 03** | `client/src/components/waiter/WaiterDashboard.jsx` | Table map test verifying seating, capacity & clear actions |
-| **SRS-WTR-04 to 06** | `api/routes/waiter.js`, `WaiterDashboard.jsx` & `DishImage.jsx` | Visual menu card testing verifying appetizing dish photos, names, prices & discount badges |
-| **SRS-WTR-07 to 08** | `api/routes/waiter.js` & `WaiterDashboard.jsx` | Streamlined order submission test setting status `Pending_Cashier` |
-| **SRS-WTR-09 to 11** | `WaiterDashboard.jsx` & `ReceiptModal.jsx` | Thermal bill print & food ready serving verification |
-| **SRS-KIT-01 to 06** | `client/src/components/kitchen/KitchenOrderQueue.jsx` | High-speed KDS ticket state transition test (`New` → `Prep` → `Ready`) with waiter alert |
+| **SRS-WTR-04 to 06** | `api/routes/waiter.js`, `WaiterDashboard.jsx` & `DishImage.jsx` | Visual menu cards with 100% authentic dish photos, prices & discount badges |
+| **SRS-WTR-07 to 08** | `api/routes/waiter.js` & `WaiterDashboard.jsx` | Streamlined order tray with dish thumbnails setting status `Pending_Cashier` |
+| **SRS-WTR-09 to 12** | `WaiterDashboard.jsx` & `ReceiptModal.jsx` | Thermal bill print, food ready serving verification & active order visual dish badges |
+| **SRS-KIT-01 to 06** | `client/src/components/kitchen/KitchenOrderQueue.jsx` & `DishImage.jsx` | High-speed KDS ticket test with 34x34 dish thumbnails & state transitions (`New` → `Prep` → `Ready`) |
 
 ---
 

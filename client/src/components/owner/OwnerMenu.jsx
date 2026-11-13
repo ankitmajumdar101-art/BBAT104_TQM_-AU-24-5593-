@@ -579,16 +579,35 @@ export default function OwnerMenu() {
                         background: idx % 2 === 0 ? '#FFF' : '#FAFAFA'
                       }}
                     >
-                      {/* Name & Details */}
+                      {/* Name, Photo & Details */}
                       <td style={{ padding: '14px 18px' }}>
-                        <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '14px' }}>
-                          {item.name}
-                        </div>
-                        {item.description && (
-                          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', maxWidth: '320px' }}>
-                            {item.description}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <DishImage
+                            src={item.image_url}
+                            alt={item.name}
+                            category={item.category_name}
+                            size="md"
+                            style={{
+                              width: '46px',
+                              height: '46px',
+                              minWidth: '46px',
+                              minHeight: '46px',
+                              borderRadius: '10px',
+                              border: '1px solid #E2E8F0',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                            }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '14px' }}>
+                              {item.name}
+                            </div>
+                            {item.description && (
+                              <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', maxWidth: '320px' }}>
+                                {item.description}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </td>
 
                       {/* Category */}
