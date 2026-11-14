@@ -853,4 +853,354 @@ router.put('/change-password', async (req, res, next) => {
   }
 });
 
+// ============================================================
+// ROOMS, FLOORS & SEATING ARRANGEMENT MANAGEMENT (OWNER)
+// ============================================================
+
+// GET /api/owner/rooms - Fetch all rooms with tables and visual layout details
+router.get('/rooms', async (req, res, next) => {
+  try {
+    const [rooms] = await db.query(`
+      SELECT 
+        r.*,
+        COUNT(t.id) AS total_tables,
+        COALESCE(SUM(t.capacity), 0) AS total_chairs,
+        COUNT(CASE WHEN t.status = 'Available' THEN 1 END) AS available_tables,
+        COUNT(CASE WHEN t.status != 'Available' THEN 1 END) AS occupied_tables
+      FROM restaurant_rooms r
+      LEFT JOIN restaurant_tables t ON r.id = t.room_id
+      GROUP BY r.id
+      ORDER BY r.floor_number ASC, r.id ASC
+    `);
+
+    // Fetch all tables with room assignment
+    const [tables] = await db.query(`
+      SELECT t.*, r.name AS room_name, r.floor_number
+      FROM restaurant_tables t
+      LEFT JOIN restaurant_rooms r ON t.room_id = r.id
+      ORDER BY t.table_number ASC
+    `);
+
+    // Group tables by room
+    const tablesByRoom = {};
+    tables.forEach(t => {
+      const rId = t.room_id || 0;
+      if (!tablesByRoom[rId]) tablesByRoom[rId] = [];
+      tablesByRoom[rId].push(t);
+    });
+
+    const enrichedRooms = rooms.map(r => ({
+      ...r,
+      tables: tablesByRoom[r.id] || []
+    }));
+
+    res.json({
+      success: true,
+      count: enrichedRooms.length,
+      rooms: enrichedRooms,
+      all_tables: tables
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/owner/rooms - Add a new Room / Floor
+router.post('/rooms', async (req, res, next) => {
+  const connection = await db.getConnection();
+  try {
+    const { name, floor_number = 0, description = '' } = req.body;
+    const initial_tables_count = req.body.initial_tables_count !== undefined 
+      ? req.body.initial_tables_count 
+      : (req.body.initial_table_count !== undefined ? req.body.initial_table_count : 10);
+    const chairs_per_table = req.body.chairs_per_table !== undefined 
+      ? req.body.chairs_per_table 
+      : (req.body.chair_capacity_per_table !== undefined ? req.body.chair_capacity_per_table : 4);
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Room/Floor name is required.' });
+    }
+
+    await connection.beginTransaction();
+
+    const [existing] = await connection.query('SELECT id FROM restaurant_rooms WHERE name = ?', [name.trim()]);
+    if (existing.length > 0) {
+      throw new Error(`A room with name "${name.trim()}" already exists.`);
+    }
+
+    const [roomResult] = await connection.query(
+      'INSERT INTO restaurant_rooms (name, floor_number, description, status) VALUES (?, ?, ?, "Active")',
+      [name.trim(), parseInt(floor_number, 10) || 0, (description || '').trim()]
+    );
+    const roomId = roomResult.insertId;
+
+    // Generate initial tables if requested
+    const numTables = parseInt(initial_tables_count, 10) || 0;
+    const chairsCount = parseInt(chairs_per_table, 10) || 4;
+
+    if (numTables > 0) {
+      const [[maxRow]] = await connection.query('SELECT COALESCE(MAX(table_number), 0) AS max_num FROM restaurant_tables');
+      let startNum = maxRow.max_num + 1;
+
+      for (let i = 0; i < numTables; i++) {
+        await connection.query(
+          'INSERT INTO restaurant_tables (table_number, room_id, room_name, capacity, status) VALUES (?, ?, ?, ?, "Available")',
+          [startNum + i, roomId, name.trim(), chairsCount]
+        );
+      }
+    }
+
+    await connection.commit();
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'OWNER_ADD_ROOM',
+      details: `Owner added room "${name.trim()}" (Floor ${floor_number}) with ${numTables} tables (${chairsCount} chairs each).`
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Room "${name.trim()}" created successfully with ${numTables} tables!`,
+      roomId
+    });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+});
+
+// PUT /api/owner/rooms/:id - Update Room / Floor
+router.put('/rooms/:id', async (req, res, next) => {
+  try {
+    const roomId = parseInt(req.params.id, 10);
+    const { name, floor_number, description, status } = req.body;
+
+    const [existing] = await db.query('SELECT * FROM restaurant_rooms WHERE id = ?', [roomId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ success: false, message: 'Room not found.' });
+    }
+
+    const updatedName = name && name.trim() ? name.trim() : existing[0].name;
+    const updatedFloor = floor_number !== undefined ? parseInt(floor_number, 10) : existing[0].floor_number;
+    const updatedDesc = description !== undefined ? description.trim() : existing[0].description;
+    const updatedStatus = status || existing[0].status;
+
+    await db.query(
+      'UPDATE restaurant_rooms SET name = ?, floor_number = ?, description = ?, status = ? WHERE id = ?',
+      [updatedName, updatedFloor, updatedDesc, updatedStatus, roomId]
+    );
+
+    // Also update room_name on child tables
+    await db.query('UPDATE restaurant_tables SET room_name = ? WHERE room_id = ?', [updatedName, roomId]);
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'OWNER_UPDATE_ROOM',
+      details: `Owner updated room ID ${roomId} (${updatedName}).`
+    });
+
+    res.json({
+      success: true,
+      message: `Room "${updatedName}" updated successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/owner/rooms/:id - Delete Room / Floor (only if no occupied tables)
+router.delete('/rooms/:id', async (req, res, next) => {
+  const connection = await db.getConnection();
+  try {
+    const roomId = parseInt(req.params.id, 10);
+    const [roomRows] = await connection.query('SELECT * FROM restaurant_rooms WHERE id = ?', [roomId]);
+    if (roomRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Room not found.' });
+    }
+
+    // Check occupied tables
+    const [occupied] = await connection.query(
+      'SELECT id, table_number, status FROM restaurant_tables WHERE room_id = ? AND status != "Available"',
+      [roomId]
+    );
+
+    if (occupied.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete room: Table #${occupied[0].table_number} is currently "${occupied[0].status}". Clear all tables first.`
+      });
+    }
+
+    await connection.beginTransaction();
+
+    // Delete tables belonging to this room
+    await connection.query('DELETE FROM restaurant_tables WHERE room_id = ?', [roomId]);
+    // Delete room
+    await connection.query('DELETE FROM restaurant_rooms WHERE id = ?', [roomId]);
+
+    await connection.commit();
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'OWNER_DELETE_ROOM',
+      details: `Owner deleted room "${roomRows[0].name}" and its available tables.`
+    });
+
+    res.json({
+      success: true,
+      message: `Room "${roomRows[0].name}" and its tables were deleted successfully.`
+    });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+});
+
+// POST /api/owner/tables - Add a table to a room according to size (custom chairs count)
+router.post('/tables', async (req, res, next) => {
+  try {
+    const { room_id, table_number, capacity = 4 } = req.body;
+
+    if (!room_id) {
+      return res.status(400).json({ success: false, message: 'Room selection is required.' });
+    }
+
+    const [roomRows] = await db.query('SELECT * FROM restaurant_rooms WHERE id = ?', [parseInt(room_id, 10)]);
+    if (roomRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Selected room does not exist.' });
+    }
+
+    const room = roomRows[0];
+    let finalTableNum = parseInt(table_number, 10);
+
+    if (!finalTableNum) {
+      const [[maxRow]] = await db.query('SELECT COALESCE(MAX(table_number), 0) AS max_num FROM restaurant_tables');
+      finalTableNum = maxRow.max_num + 1;
+    } else {
+      const [existing] = await db.query('SELECT id FROM restaurant_tables WHERE table_number = ?', [finalTableNum]);
+      if (existing.length > 0) {
+        return res.status(400).json({ success: false, message: `Table #${finalTableNum} already exists.` });
+      }
+    }
+
+    const chairsCount = Math.max(1, parseInt(capacity, 10) || 4);
+
+    await db.query(
+      'INSERT INTO restaurant_tables (table_number, room_id, room_name, capacity, status) VALUES (?, ?, ?, ?, "Available")',
+      [finalTableNum, room.id, room.name, chairsCount]
+    );
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'OWNER_ADD_TABLE',
+      details: `Owner added Table #${finalTableNum} (${chairsCount} chairs) to room "${room.name}".`
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Table #${finalTableNum} with ${chairsCount} chairs added to "${room.name}" successfully!`,
+      table_number: finalTableNum
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/owner/tables/:id - Update table size / capacity or room
+router.put('/tables/:id', async (req, res, next) => {
+  try {
+    const tableId = parseInt(req.params.id, 10);
+    const { capacity, room_id } = req.body;
+
+    const [tableRows] = await db.query('SELECT * FROM restaurant_tables WHERE id = ?', [tableId]);
+    if (tableRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Table not found.' });
+    }
+
+    const table = tableRows[0];
+    let updatedCapacity = table.capacity;
+    if (capacity !== undefined) {
+      updatedCapacity = Math.max(1, parseInt(capacity, 10) || 4);
+    }
+
+    let updatedRoomId = table.room_id;
+    let updatedRoomName = table.room_name;
+    if (room_id !== undefined) {
+      const [rRows] = await db.query('SELECT * FROM restaurant_rooms WHERE id = ?', [parseInt(room_id, 10)]);
+      if (rRows.length > 0) {
+        updatedRoomId = rRows[0].id;
+        updatedRoomName = rRows[0].name;
+      }
+    }
+
+    await db.query(
+      'UPDATE restaurant_tables SET capacity = ?, room_id = ?, room_name = ? WHERE id = ?',
+      [updatedCapacity, updatedRoomId, updatedRoomName, tableId]
+    );
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'OWNER_UPDATE_TABLE',
+      details: `Owner updated Table #${table.table_number}: Capacity=${updatedCapacity} chairs, Room="${updatedRoomName}".`
+    });
+
+    res.json({
+      success: true,
+      message: `Table #${table.table_number} updated to ${updatedCapacity} chairs in "${updatedRoomName}".`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/owner/tables/:id - Delete a table (only if Available)
+router.delete('/tables/:id', async (req, res, next) => {
+  try {
+    const tableId = parseInt(req.params.id, 10);
+    const [tableRows] = await db.query('SELECT * FROM restaurant_tables WHERE id = ?', [tableId]);
+    if (tableRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Table not found.' });
+    }
+
+    const table = tableRows[0];
+    if (table.status !== 'Available') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete Table #${table.table_number}: It is currently "${table.status}". Clear table first.`
+      });
+    }
+
+    await db.query('DELETE FROM restaurant_tables WHERE id = ?', [tableId]);
+
+    await logAudit({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      action: 'OWNER_DELETE_TABLE',
+      details: `Owner deleted Table #${table.table_number} from room "${table.room_name}".`
+    });
+
+    res.json({
+      success: true,
+      message: `Table #${table.table_number} was deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

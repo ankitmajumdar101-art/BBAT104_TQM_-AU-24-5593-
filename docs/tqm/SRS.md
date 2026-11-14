@@ -151,6 +151,10 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 * **SRS-OWN-19:** The Owner shall be the sole authority to configure Indian GST statutory rates (CGST %, SGST %, and combined GST preview), invoice receipt prefixes, and receipt header/footer messages.
 * **SRS-OWN-20:** The Owner shall have authority to enforce a maximum allowable bill discount percentage threshold (Poka-Yoke cap) preventing unauthorized cashier revenue leakage.
 
+#### I. Dining Rooms & Seating Arrangement Management
+* **SRS-OWN-21: Multi-Floor & Room Infrastructure Management:** The Restaurant Owner shall have full authority to create, view, update, and manage dining rooms or floor sections (e.g., Ground Floor Main Dining Hall, First Floor Family AC Hall, Rooftop Garden Lounge). Each room record shall record name, floor number, description, and status. When creating a room, the Owner can specify the initial table count (default 10 tables) and default chair capacity per table (default 4 chairs).
+* **SRS-OWN-22: Configurable Table Sizing & Spatial Visual Seating Map:** The Owner shall be able to add tables to any room with custom chair capacity (e.g., 2, 4, 6, 8, or 10 chairs) to match physical restaurant table sizes. The Owner dashboard shall provide an interactive visual floor plan layout rendering every table surrounded by realistic perimeter chairs (color-coded by live status: Available, Seated, Order Placed, Food Ready), enabling the Owner to analyze seating arrangement aesthetics, spatial capacity, and live occupancy rates at a glance.
+
 ---
 
 ### 4.2 Stakeholder 2 — Administrator Requirements
@@ -188,9 +192,11 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 
 ### 4.4 Stakeholder 4 — Floor Waiter Requirements
 
-#### A. Customer Table Sitting System
-* **SRS-WTR-01:** The system shall provide an interactive Table Seating Map displaying all restaurant tables with seating capacity and live operational status:
-  * 🟢 **Available:** Table is clean and ready for seating.
+#### A. Customer Table Sitting System with Rooms/Floors & 4-Chair Layout
+* **SRS-WTR-01: Hierarchical Dining Room & Floor Selector:** The Table Seating Map shall feature a dedicated Room/Floor selector at the top (e.g., Ground Floor Main Dining Hall, First Floor Family AC Hall, Rooftop Garden Lounge). Selecting a room shall filter and display its corresponding tables (configured with 10 tables per room by default, with 4 chairs per table).
+* **SRS-WTR-01b: 4-Chair Interactive Seating Matrix:** Each table card shall render a visual 4-chair layout displaying the seating status and active orders per chair base, allowing the waiter to see at a glance which chair ordered which dish and click any chair to initiate order taking for that seat.
+* **SRS-WTR-01c:** Each table card shall display live operational statuses:
+  * 🟢 **Available:** Table is clean and 4 chairs ready for seating.
   * 🟡 **Seated:** Guests are seated and reviewing the menu.
   * 🔵 **Order Placed:** Waiter has submitted order to Cashier for billing calculation.
   * 🟣 **Bill Ready:** Cashier has finalized bill; ready for waiter to print/hand to customer.
@@ -212,14 +218,16 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 * **SRS-WTR-06:** Only dishes marked `available = 1` by kitchen/management shall be selectable for order entry.
 
 #### C. Order Taking & Dispatch to Cashier
-* **SRS-WTR-07:** **Order Taking Tray with Visual Dish Thumbnails:** The Waiter shall select items for a specific seated table, displaying added items in a streamlined order tray with 36x36 dish thumbnails, quantities, price, savings, and special cooking notes.
-* **SRS-WTR-08:** Submitting the order sets `order_status = 'Pending_Cashier'` and `kitchen_status = 'Pending_Bill'`, transmitting the ticket to the Cashier queue without exposing kitchen preparation until billed.
+* **SRS-WTR-07: Strict 4-Step Progressive Stepper (`Room/Floor -> Table -> Chair -> Take Order`):** The Waiter order-taking workflow shall enforce a 4-step progressive selection:
+  $$\text{Room / Floor} \longrightarrow \text{Table} \longrightarrow \text{Chair (Seat 1-4 or Shared)} \longrightarrow \text{Take Order}$$
+* **SRS-WTR-07b: Chair-Based Order Allocation & Tray Management:** Each dish added to the order tray shall be assigned to a specific chair number (or marked as `Shared / Whole Table`). The customer order tray shall display assigned chair badges, provide a quick dropdown selector to reassign dishes between chairs, and support per-chair quantity adjustments.
+* **SRS-WTR-08:** Submitting the order sets `order_status = 'Pending_Cashier'` and `kitchen_status = 'Pending_Bill'`, transmitting the ticket with room name and chair labels to the Cashier queue without exposing kitchen preparation until billed.
 
 #### D. Bill Receipt Delivery & Food Service
 * **SRS-WTR-09:** When the Cashier calculates the bill, the Waiter dashboard shall display a "Bill Ready" notification allowing the waiter to inspect and print the 80mm thermal receipt for the customer.
 * **SRS-WTR-10:** When the Kitchen Chef marks food `Ready`, the Waiter dashboard shall display a high-priority "Food Ready" alert banner.
 * **SRS-WTR-11:** The Waiter shall deliver dishes to the table and mark the order as `Served`, updating the table status to `Served`.
-* **SRS-WTR-12:** **Active Orders Progression Tracker with Visual Dish Badges:** The Waiter live orders tracker shall display visual dish badges with 26x26 dish thumbnails and quantities for every active order, keeping the floor staff visually connected with the dishes ordered.
+* **SRS-WTR-12:** **Active Orders Progression Tracker with Visual Dish Badges & Chair Labels:** The Waiter live orders tracker shall display visual dish badges with dish thumbnails, quantities, table numbers with Room/Floor context, and assigned chair labels for every active order, keeping the floor staff visually connected with the exact dishes and chairs to serve.
 
 ---
 
@@ -227,7 +235,7 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 
 #### A. Kitchen Display System (KDS)
 * **SRS-KIT-01:** The system shall provide a dedicated KDS screen displaying incoming customer orders in real time.
-* **SRS-KIT-02:** **Kitchen Ticket Cards with Visual Dish Thumbnails:** Kitchen cards shall show order number, table number, assigned floor waiter name, 34x34 visual dish thumbnails directly beside each dish item name, quantities, order timestamp, and special cooking notes in a clean, high-speed ticket format so chefs instantly recognize the culinary preparation without confusing dishes.
+* **SRS-KIT-02:** **Kitchen Ticket Cards with Visual Dish Thumbnails & Chair Bases:** Kitchen cards shall show order number, table number, dining room name, assigned floor waiter name, 34x34 visual dish thumbnails directly beside each dish item name, chair allocation labels (`Chair 1`, `Chair 2`, `Shared`), quantities, order timestamp, and special cooking notes in a clean, high-speed ticket format so chefs instantly recognize culinary preparation and chair plating.
 * **SRS-KIT-03:** **Financial Information Hiding:** The KDS interface shall strictly hide item prices, subtotals, discounts, taxes, customer phone numbers, and payment modes.
 
 #### B. Finite Workflow State Transitions
@@ -285,8 +293,10 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 │     subtotal    │                                 │     price       │
 │     tax_amount  │                                 │     quantity    │
 │     discount    │                                 │     subtotal    │
-│     total       │                                 └─────────────────┘
-│     payment_mthd│
+│     total       │                                 │     chair_number│
+│     payment_mthd│                                 │     chair_label │
+│     room_id     │                                 └─────────────────┘
+│     room_name   │
 │     order_status│
 │     kitchen_stat│
 └────────┬────────┘
@@ -295,21 +305,23 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
          ├─── 1:N ───> [backup_logs]         (file_name, file_size, status, created_at)
          └─── 1:N ───> [expenses]            (category, amount, expense_date, recorded_by)
 
-  Floor Table & Operational State Tracking Table:
-┌─────────────────────┐
-│  restaurant_tables  │
-├─────────────────────┤
-│ PK  id              │
-│     table_number    │
-│     capacity        │
-│     status          │  (Available, Seated, Order Placed, Bill Ready, Food Ready, Served)
-│     customer_name   │
-│     customer_phone  │
-│     guests_count    │
-│ FK  current_order_id│
-│ FK  assigned_waiter │
-│     seated_at       │
-└─────────────────────┘
+  Multi-Room Dining Architecture & Table Seating Entity Model:
+┌──────────────────────┐       1:N       ┌─────────────────────┐
+│   restaurant_rooms   │────────────────>│  restaurant_tables  │
+├──────────────────────┤                 ├─────────────────────┤
+│ PK  id               │                 │ PK  id              │
+│     name             │                 │     table_number    │
+│     floor_number     │                 │ FK  room_id         │
+│     description      │                 │     room_name       │
+│     status           │                 │     capacity(chairs)│
+└──────────────────────┘                 │     status          │
+                                         │     customer_name   │
+                                         │     customer_phone  │
+                                         │     guests_count    │
+                                         │ FK  current_order_id│
+                                         │ FK  assigned_waiter │
+                                         │     seated_at       │
+                                         └─────────────────────┘
 
   Additional Independent Surveillance Tables:
   • [restaurant_settings] : (setting_key, setting_value) [GSTIN, Store Details, Tax Rates, Max Discount]
@@ -341,16 +353,17 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 | **SRS-OWN-13 to 14** | `client/src/components/owner/OwnerBillHistory.jsx` & `DishImage.jsx` | Read-only audit verification and itemized receipt modal with dish thumbnails |
 | **SRS-OWN-15 to 18** | `api/routes/menu.js`, `OwnerMenu.jsx` & `DishImage.jsx` | Owner menu catalog table with dish thumbnails, CRUD, authentic photo presets & discount tests |
 | **SRS-OWN-19 to 20** | `api/routes/owner.js` & `OwnerBillingSettings.jsx` | Owner tax/GST and discount limit configuration tests |
+| **SRS-OWN-21 to 22** | `api/routes/owner.js` & `OwnerSeatingArrangement.jsx` | Dynamic dining rooms CRUD, custom table sizing by capacity, and interactive visual floor plan seating layout |
 | **SRS-ADM-01 to 02** | `api/routes/users.js` & `AdminUsers.jsx` | Automated test asserting `HTTP 403` on Owner delete |
 | **SRS-ADM-03** | `api/routes/admin.js` & `AdminDashboard.jsx` | Automated test asserting `HTTP 403` on Admin menu/tax mutation |
 | **SRS-ADM-04 to 07** | `api/routes/backup.js`, `AuditLogs.jsx`, `ErrorLogs.jsx` | Disaster recovery & audit/error inspection tests |
 | **SRS-CSH-01 to 03** | `client/src/components/POSBilling.jsx`, `ReceiptModal.jsx` & `DishImage.jsx` | POS menu card selection, order cart with dish thumbnails & printable receipt tests |
-| **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` & `DishImage.jsx` | Waiter queue billing calculation test with dish thumbnails finalizing into billed tickets |
-| **SRS-WTR-01 to 03** | `client/src/components/waiter/WaiterDashboard.jsx` | Table map test verifying seating, capacity & clear actions |
+| **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` & `DishImage.jsx` | Waiter queue billing calculation test with dish thumbnails and chair breakdown finalizing into billed tickets |
+| **SRS-WTR-01 to 03** | `client/src/components/waiter/WaiterDashboard.jsx` & `api/routes/waiter.js` | Dining Room/Floor selector, 10 tables per room with 4-chair seating matrix, customer seating & clear actions |
 | **SRS-WTR-04 to 06** | `api/routes/waiter.js`, `WaiterDashboard.jsx` & `DishImage.jsx` | Visual menu cards with 100% authentic dish photos, prices, discount badges & WhatsApp-style full-screen zoom lightbox |
-| **SRS-WTR-07 to 08** | `api/routes/waiter.js` & `WaiterDashboard.jsx` | Streamlined order tray with dish thumbnails setting status `Pending_Cashier` |
-| **SRS-WTR-09 to 12** | `WaiterDashboard.jsx` & `ReceiptModal.jsx` | Thermal bill print, food ready serving verification & active order visual dish badges |
-| **SRS-KIT-01 to 06** | `client/src/components/kitchen/KitchenOrderQueue.jsx` & `DishImage.jsx` | High-speed KDS ticket test with 34x34 dish thumbnails & state transitions (`New` → `Prep` → `Ready`) |
+| **SRS-WTR-07 to 08** | `api/routes/waiter.js` & `WaiterDashboard.jsx` | 4-step progressive stepper (`Room/Floor -> Table -> Chair -> Take Order`), chair-by-chair dish allocation tray, and `Pending_Cashier` dispatch |
+| **SRS-WTR-09 to 12** | `WaiterDashboard.jsx` & `ReceiptModal.jsx` | Thermal bill print, food ready serving verification & active order visual dish badges with chair labels |
+| **SRS-KIT-01 to 06** | `client/src/components/kitchen/KitchenOrderQueue.jsx` & `DishImage.jsx` | High-speed KDS ticket test with visual dish thumbnails, chair allocation labels & state transitions (`New` → `Prep` → `Ready`) |
 
 ---
 

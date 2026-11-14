@@ -9,7 +9,8 @@ import {
   Settings, 
   UserCircle,
   UtensilsCrossed,
-  Percent
+  Percent,
+  Armchair
 } from 'lucide-react';
 
 import OwnerOverview from './OwnerOverview';
@@ -22,12 +23,14 @@ import OwnerMenu from './OwnerMenu';
 import OwnerBillingSettings from './OwnerBillingSettings';
 import OwnerBusinessSettings from './OwnerBusinessSettings';
 import OwnerProfile from './OwnerProfile';
+import OwnerSeatingArrangement from './OwnerSeatingArrangement';
 
 export default function OwnerDashboard({ onLogout, initialSubTab = 'overview' }) {
   const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
 
   const sections = [
     { id: 'overview', label: 'Overview', icon: BarChart3, desc: 'A. Business KPI Summary' },
+    { id: 'seating', label: 'Rooms & Seating', icon: Armchair, desc: 'Rooms, Floors & Visual Seating Layout' },
     { id: 'menu', label: 'Menu & Offers', icon: UtensilsCrossed, desc: 'Dishes, Pricing & Customer Discounts' },
     { id: 'billing', label: 'Tax & Invoicing', icon: Percent, desc: 'GST Rates & Billing Policy' },
     { id: 'sales', label: 'Sales Reports', icon: TrendingUp, desc: 'B. Daily, Monthly & Yearly' },
@@ -89,6 +92,7 @@ export default function OwnerDashboard({ onLogout, initialSubTab = 'overview' })
       {/* Render Selected Sub-Section */}
       <div style={{ minHeight: '600px' }}>
         {activeSubTab === 'overview' && <OwnerOverview onNavigate={(target) => setActiveSubTab(target)} />}
+        {activeSubTab === 'seating' && <OwnerSeatingArrangement />}
         {activeSubTab === 'menu' && <OwnerMenu />}
         {activeSubTab === 'billing' && <OwnerBillingSettings />}
         {activeSubTab === 'sales' && <OwnerSalesReports />}

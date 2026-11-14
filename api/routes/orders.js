@@ -359,10 +359,11 @@ router.get('/kitchen-status', authenticateToken, authorizeRoles('Cashier', 'Admi
     for (const order of orders) {
       const [items] = await db.query(
         `SELECT oi.id, oi.item_name, oi.price, oi.quantity, oi.subtotal,
+                oi.chair_number, oi.chair_label,
                 COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
          FROM order_items oi
          LEFT JOIN menu_items m ON oi.menu_item_id = m.id
-         WHERE oi.order_id = ?`,
+         WHERE oi.order_id = ? ORDER BY oi.chair_number ASC, oi.id ASC`,
         [order.id]
       );
       order.items = items;
@@ -786,10 +787,12 @@ router.get('/waiter-pending', authenticateToken, authorizeRoles('Cashier', 'Admi
     for (const order of orders) {
       const [items] = await db.query(
         `SELECT oi.id, oi.menu_item_id, oi.item_name, oi.price, oi.quantity, oi.subtotal,
+                oi.chair_number, oi.chair_label,
                 COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
          FROM order_items oi
          LEFT JOIN menu_items m ON oi.menu_item_id = m.id
-         WHERE oi.order_id = ?`,
+         WHERE oi.order_id = ?
+         ORDER BY oi.chair_number ASC, oi.id ASC`,
         [order.id]
       );
       order.items = items;
@@ -964,12 +967,13 @@ router.get('/:id', authenticateToken, async (req, res, next) => {
 
     const [items] = await db.query(
       `SELECT oi.id, oi.menu_item_id, oi.item_name, oi.price, oi.quantity, oi.subtotal,
+              oi.chair_number, oi.chair_label,
               COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url, c.name AS category_name
        FROM order_items oi
        LEFT JOIN menu_items m ON oi.menu_item_id = m.id
        LEFT JOIN categories c ON m.category_id = c.id
        WHERE oi.order_id = ?
-       ORDER BY oi.id ASC`,
+       ORDER BY oi.chair_number ASC, oi.id ASC`,
       [order.id]
     );
 

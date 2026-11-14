@@ -253,7 +253,7 @@ export default function CashierWaiterQueue({ onBillFinalized }) {
                       fontWeight: '900',
                       letterSpacing: '0.4px'
                     }}>
-                      TABLE #{ord.table_number}
+                      TABLE #{ord.table_number}{ord.room_name ? ` • ${ord.room_name}` : ''}
                     </span>
 
                     <span style={{
@@ -337,7 +337,21 @@ export default function CashierWaiterQueue({ onBillFinalized }) {
                             }}>
                               {itm.quantity}x
                             </span>
-                            <span style={{ fontWeight: '700', color: '#1E293B' }}>{itm.item_name}</span>
+                            <span style={{ fontWeight: '700', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span>{itm.item_name}</span>
+                              {itm.chair_label && (
+                                <span style={{
+                                  fontSize: '10px',
+                                  background: itm.chair_number === 0 ? '#EFF6FF' : '#F3E8FF',
+                                  color: itm.chair_number === 0 ? '#1D4ED8' : '#7E22CE',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  fontWeight: '800'
+                                }}>
+                                  🪑 {itm.chair_label}
+                                </span>
+                              )}
+                            </span>
                           </div>
                           <span style={{ fontWeight: '700', color: '#0F172A' }}>
                             ₹{parseFloat(itm.subtotal || (itm.price * itm.quantity)).toFixed(2)}

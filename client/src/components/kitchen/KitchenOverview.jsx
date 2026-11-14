@@ -355,7 +355,7 @@ export default function KitchenOverview({ onNavigate, onAdvanceStatus }) {
                         fontWeight: '900',
                         letterSpacing: '0.3px'
                       }}>
-                        TABLE #{order.table_number}
+                        TABLE #{order.table_number}{order.room_name ? ` • ${order.room_name}` : ''}
                       </span>
 
                       <span style={{
@@ -407,8 +407,20 @@ export default function KitchenOverview({ onNavigate, onAdvanceStatus }) {
                     }}>
                       {(order.items || []).map((item, idx) => (
                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#1E293B' }}>
-                            {item.item_name}
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                            <span>{item.item_name}</span>
+                            {item.chair_label && (
+                              <span style={{
+                                fontSize: '10px',
+                                background: item.chair_number === 0 ? '#EFF6FF' : '#F3E8FF',
+                                color: item.chair_number === 0 ? '#1D4ED8' : '#7E22CE',
+                                padding: '1px 5px',
+                                borderRadius: '4px',
+                                fontWeight: '800'
+                              }}>
+                                🪑 {item.chair_label}
+                              </span>
+                            )}
                           </span>
                           <span style={{
                             background: '#0F172A',

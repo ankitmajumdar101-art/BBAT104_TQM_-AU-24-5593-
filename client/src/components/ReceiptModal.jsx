@@ -96,7 +96,7 @@ export default function ReceiptModal({ order, onClose }) {
             {/* Bill Meta */}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
               <span><strong>Bill #:</strong> {order.bill_number}</span>
-              <span><strong>Table:</strong> #{order.table_number}</span>
+              <span><strong>Table:</strong> #{order.table_number}{order.room_name ? ` (${order.room_name})` : ''}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
               <span><strong>Date:</strong> {new Date(order.created_at || Date.now()).toLocaleString()}</span>
@@ -128,7 +128,14 @@ export default function ReceiptModal({ order, onClose }) {
                           size="sm"
                           style={{ width: '22px', height: '22px', minWidth: '22px', minHeight: '22px', borderRadius: '4px' }}
                         />
-                        <span>{it.item_name}</span>
+                        <span>
+                          {it.item_name}
+                          {it.chair_label ? (
+                            <span style={{ fontSize: '10px', color: '#64748B', marginLeft: '4px', fontWeight: 'bold' }}>
+                              [🪑 {it.chair_label}]
+                            </span>
+                          ) : null}
+                        </span>
                       </div>
                     </td>
                     <td style={{ textAlign: 'center' }}>{it.quantity}</td>

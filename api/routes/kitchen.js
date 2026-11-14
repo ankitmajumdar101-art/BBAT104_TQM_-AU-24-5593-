@@ -57,6 +57,8 @@ router.get('/overview', async (req, res, next) => {
         o.id, 
         o.bill_number, 
         o.table_number, 
+        o.room_id,
+        o.room_name,
         o.waiter_name,
         o.waiter_id,
         o.kitchen_status, 
@@ -74,11 +76,11 @@ router.get('/overview', async (req, res, next) => {
     // Attach food line items (dish image, item_name, quantity - hides financial data)
     for (const ord of attentionOrders) {
       const [items] = await db.query(
-        `SELECT oi.id, oi.item_name, oi.quantity,
+        `SELECT oi.id, oi.item_name, oi.quantity, oi.chair_number, oi.chair_label,
                 COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
          FROM order_items oi
          LEFT JOIN menu_items m ON oi.menu_item_id = m.id
-         WHERE oi.order_id = ? ORDER BY oi.id ASC`,
+         WHERE oi.order_id = ? ORDER BY oi.chair_number ASC, oi.id ASC`,
         [ord.id]
       );
       ord.items = items;
@@ -112,6 +114,8 @@ router.get('/orders', async (req, res, next) => {
         o.id, 
         o.bill_number, 
         o.table_number, 
+        o.room_id,
+        o.room_name,
         o.customer_name,
         o.waiter_name,
         o.waiter_id,
@@ -158,11 +162,11 @@ router.get('/orders', async (req, res, next) => {
     // Attach items without prices or financial totals
     for (const ord of orders) {
       const [items] = await db.query(
-        `SELECT oi.id, oi.item_name, oi.quantity,
+        `SELECT oi.id, oi.item_name, oi.quantity, oi.chair_number, oi.chair_label,
                 COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
          FROM order_items oi
          LEFT JOIN menu_items m ON oi.menu_item_id = m.id
-         WHERE oi.order_id = ? ORDER BY oi.id ASC`,
+         WHERE oi.order_id = ? ORDER BY oi.chair_number ASC, oi.id ASC`,
         [ord.id]
       );
       ord.items = items;

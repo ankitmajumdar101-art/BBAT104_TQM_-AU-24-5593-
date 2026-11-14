@@ -26,15 +26,44 @@ async function getBillingSettings() {
 }
 
 // ============================================================
-// 1. TABLE MANAGEMENT & SITTING SYSTEM
+// 1. ROOM / FLOOR & TABLE MANAGEMENT WITH CHAIR-BASED SITTING
 // ============================================================
 
-// GET /api/waiter/tables - Get all tables with real-time status and active order summary
+// GET /api/waiter/rooms - Get all active rooms with floor number, table count, and occupancy summary
+router.get('/rooms', async (req, res, next) => {
+  try {
+    const [rooms] = await db.query(`
+      SELECT 
+        r.*,
+        COUNT(t.id) AS total_tables,
+        COALESCE(SUM(t.capacity), 0) AS total_chairs,
+        COUNT(CASE WHEN t.status = 'Available' THEN 1 END) AS available_tables,
+        COUNT(CASE WHEN t.status != 'Available' THEN 1 END) AS occupied_tables
+      FROM restaurant_rooms r
+      LEFT JOIN restaurant_tables t ON r.id = t.room_id
+      GROUP BY r.id
+      ORDER BY r.floor_number ASC, r.id ASC
+    `);
+
+    res.json({
+      success: true,
+      count: rooms.length,
+      rooms
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/waiter/tables - Get tables (optionally filtered by room_id) with real-time status and active items
 router.get('/tables', async (req, res, next) => {
   try {
-    const [tables] = await db.query(`
+    const roomId = req.query.room_id ? parseInt(req.query.room_id, 10) : null;
+    let query = `
       SELECT 
         t.*,
+        COALESCE(r.name, t.room_name, 'Ground Floor') AS room_name,
+        COALESCE(r.floor_number, 0) AS floor_number,
         o.bill_number,
         o.order_status,
         o.kitchen_status,
@@ -45,14 +74,87 @@ router.get('/tables', async (req, res, next) => {
         o.food_served_to_table,
         TIMESTAMPDIFF(MINUTE, t.seated_at, NOW()) AS seated_elapsed_minutes
       FROM restaurant_tables t
+      LEFT JOIN restaurant_rooms r ON t.room_id = r.id
       LEFT JOIN orders o ON t.current_order_id = o.id
-      ORDER BY t.table_number ASC
-    `);
+    `;
+    const params = [];
+    if (roomId) {
+      query += ` WHERE t.room_id = ?`;
+      params.push(roomId);
+    }
+    query += ` ORDER BY t.table_number ASC`;
+
+    const [tables] = await db.query(query, params);
+
+    // Fetch active chair items for tables with active orders
+    const activeOrderIds = tables.map(t => t.current_order_id).filter(Boolean);
+    const chairItemsMap = {};
+    if (activeOrderIds.length > 0) {
+      const [orderItems] = await db.query(`
+        SELECT oi.id, oi.order_id, oi.menu_item_id, oi.item_name, oi.quantity,
+               oi.chair_number, oi.chair_label, oi.price, oi.subtotal,
+               COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
+        FROM order_items oi
+        LEFT JOIN menu_items m ON oi.menu_item_id = m.id
+        WHERE oi.order_id IN (?)
+        ORDER BY oi.chair_number ASC, oi.id ASC
+      `, [activeOrderIds]);
+
+      orderItems.forEach(item => {
+        if (!chairItemsMap[item.order_id]) chairItemsMap[item.order_id] = [];
+        chairItemsMap[item.order_id].push(item);
+      });
+    }
+
+    const enrichedTables = tables.map(t => ({
+      ...t,
+      capacity: t.capacity || 4,
+      active_items: t.current_order_id ? (chairItemsMap[t.current_order_id] || []) : []
+    }));
 
     res.json({
       success: true,
-      count: tables.length,
-      tables
+      count: enrichedTables.length,
+      tables: enrichedTables
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/waiter/tables/:table_number/chairs - Detailed chair-by-chair order breakdown
+router.get('/tables/:table_number/chairs', async (req, res, next) => {
+  try {
+    const tableNum = parseInt(req.params.table_number, 10);
+    const [tableRows] = await db.query(`
+      SELECT t.*, r.name AS room_name, r.floor_number
+      FROM restaurant_tables t
+      LEFT JOIN restaurant_rooms r ON t.room_id = r.id
+      WHERE t.table_number = ?
+    `, [tableNum]);
+
+    if (tableRows.length === 0) {
+      return res.status(404).json({ success: false, message: `Table #${tableNum} not found` });
+    }
+
+    const table = tableRows[0];
+    let items = [];
+    if (table.current_order_id) {
+      const [orderItems] = await db.query(`
+        SELECT oi.*, COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
+        FROM order_items oi
+        LEFT JOIN menu_items m ON oi.menu_item_id = m.id
+        WHERE oi.order_id = ?
+        ORDER BY oi.chair_number ASC, oi.id ASC
+      `, [table.current_order_id]);
+      items = orderItems;
+    }
+
+    res.json({
+      success: true,
+      table,
+      capacity: table.capacity || 4,
+      items
     });
   } catch (error) {
     next(error);
@@ -311,6 +413,9 @@ router.post('/orders', async (req, res, next) => {
       subtotal += lineSubtotal;
       totalDiscountSavings += parseFloat((discountPerItem * qty).toFixed(2));
 
+      const chairNum = itm.chair_number !== undefined && itm.chair_number !== null ? parseInt(itm.chair_number, 10) : 1;
+      const chairLbl = itm.chair_label ? String(itm.chair_label).trim() : (chairNum === 0 ? 'Shared / Whole Table' : `Chair ${chairNum}`);
+
       verifiedItems.push({
         menu_item_id: menuItem.id,
         item_name: menuItem.name,
@@ -319,7 +424,9 @@ router.post('/orders', async (req, res, next) => {
         price: effectiveItemPrice, // Discounted unit price applied
         quantity: qty,
         subtotal: lineSubtotal,
-        image_url: menuItem.image_url || ''
+        image_url: menuItem.image_url || '',
+        chair_number: chairNum,
+        chair_label: chairLbl
       });
     }
 
@@ -333,19 +440,23 @@ router.post('/orders', async (req, res, next) => {
 
     const waiterName = req.user.full_name || req.user.username;
     const orderNumber = `WTR-${Date.now().toString().slice(-6)}-T${tableNum}`;
+    const roomId = table.room_id || null;
+    const roomName = table.room_name || '';
 
     // Insert order with status 'Pending_Cashier' & kitchen_status 'Pending_Bill'
     const [orderResult] = await connection.query(`
       INSERT INTO orders
-        (bill_number, table_number, customer_name, customer_phone,
+        (bill_number, table_number, room_id, room_name, customer_name, customer_phone,
          subtotal, tax_rate, tax_amount, discount_type, discount_value, discount_amount,
          total, payment_method, payment_status, order_status, kitchen_status,
          notes, created_by, waiter_id, waiter_name, table_status)
       VALUES
-        (?, ?, ?, ?, ?, ?, ?, 'percentage', 0, ?, ?, 'Unpaid', 'Pending', 'Pending_Cashier', 'Pending_Bill', ?, ?, ?, ?, 'Order Placed')
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, 'percentage', 0, ?, ?, 'Unpaid', 'Pending', 'Pending_Cashier', 'Pending_Bill', ?, ?, ?, ?, 'Order Placed')
     `, [
       orderNumber,
       tableNum,
+      roomId,
+      roomName,
       guestName,
       guestPhone,
       subtotal,
@@ -361,12 +472,12 @@ router.post('/orders', async (req, res, next) => {
 
     const orderId = orderResult.insertId;
 
-    // Insert line items
+    // Insert line items with chair allocation
     for (const vItem of verifiedItems) {
       await connection.query(`
-        INSERT INTO order_items (order_id, menu_item_id, item_name, price, quantity, subtotal, image_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, [orderId, vItem.menu_item_id, vItem.item_name, vItem.price, vItem.quantity, vItem.subtotal, vItem.image_url || '']);
+        INSERT INTO order_items (order_id, menu_item_id, item_name, price, quantity, subtotal, image_url, chair_number, chair_label)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [orderId, vItem.menu_item_id, vItem.item_name, vItem.price, vItem.quantity, vItem.subtotal, vItem.image_url || '', vItem.chair_number, vItem.chair_label]);
     }
 
     // Update table status to 'Order Placed' and link current order
@@ -431,6 +542,8 @@ router.get('/orders', async (req, res, next) => {
         o.id,
         o.bill_number,
         o.table_number,
+        o.room_id,
+        o.room_name,
         o.customer_name,
         o.customer_phone,
         o.subtotal,
@@ -474,10 +587,12 @@ router.get('/orders', async (req, res, next) => {
     for (const order of orders) {
       const [items] = await db.query(
         `SELECT oi.id, oi.menu_item_id, oi.item_name, oi.price, oi.quantity, oi.subtotal,
+                oi.chair_number, oi.chair_label,
                 COALESCE(NULLIF(oi.image_url, ''), m.image_url, '') AS image_url
          FROM order_items oi
          LEFT JOIN menu_items m ON oi.menu_item_id = m.id
-         WHERE oi.order_id = ?`,
+         WHERE oi.order_id = ?
+         ORDER BY oi.chair_number ASC, oi.id ASC`,
         [order.id]
       );
       order.items = items;

@@ -19,7 +19,11 @@ import {
   Send,
   Coffee,
   Check,
-  Printer
+  Printer,
+  Building2,
+  Armchair,
+  LayoutGrid,
+  ArrowRight
 } from 'lucide-react';
 import ReceiptModal from '../ReceiptModal';
 import DishImage from '../common/DishImage';
@@ -28,6 +32,9 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
   const [activeTab, setActiveTab] = useState('tables'); // 'tables', 'order', 'orders'
   
   // Data States
+  const [rooms, setRooms] = useState([]);
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [selectedChair, setSelectedChair] = useState(1); // 1, 2, 3, 4, or 0 (Shared)
   const [tables, setTables] = useState([]);
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
@@ -54,6 +61,25 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
   // General UI States
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
+
+  // 0. Fetch Rooms / Floors
+  const fetchRooms = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/waiter/rooms', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success && data.rooms) {
+        setRooms(data.rooms);
+        if (data.rooms.length > 0 && !selectedRoomId) {
+          setSelectedRoomId(data.rooms[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load rooms:', err);
+    }
+  };
 
   // 1. Fetch Tables
   const fetchTables = async () => {
@@ -108,16 +134,19 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
   };
 
   const refreshAll = () => {
+    fetchRooms();
     fetchTables();
     fetchOrdersAndNotifications();
   };
 
   useEffect(() => {
+    fetchRooms();
     fetchTables();
     fetchMenu();
     fetchOrdersAndNotifications();
 
     const interval = setInterval(() => {
+      fetchRooms();
       fetchTables();
       fetchOrdersAndNotifications();
     }, 6000);
@@ -195,21 +224,28 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
     }
   };
 
-  // Handle Switching to Order Taking with Preselected Table
-  const handleStartOrderForTable = (tbl) => {
+  // Handle Switching to Order Taking with Preselected Table & Chair
+  const handleStartOrderForTable = (tbl, chairNum = 1) => {
+    if (tbl.room_id) setSelectedRoomId(tbl.room_id);
     setSelectedTableNum(tbl.table_number);
+    setSelectedChair(chairNum);
     setOrderCustomerName(tbl.customer_name || '');
     setOrderCustomerPhone(tbl.customer_phone || '');
     setActiveTab('order');
   };
 
-  // Cart Management
+  // Cart Management with Chair Allocation
   const handleAddToCart = (dish) => {
-    const existing = cartItems.find(i => i.id === dish.id);
+    const chairNum = selectedChair !== undefined ? selectedChair : 1;
+    const chairLbl = chairNum === 0 ? 'Shared / Whole Table' : `Chair ${chairNum}`;
+    const cartKey = `${dish.id}-c${chairNum}`;
+
+    const existing = cartItems.find(i => i.cartKey === cartKey);
     if (existing) {
-      setCartItems(cartItems.map(i => i.id === dish.id ? { ...i, quantity: i.quantity + 1 } : i));
+      setCartItems(cartItems.map(i => i.cartKey === cartKey ? { ...i, quantity: i.quantity + 1 } : i));
     } else {
       setCartItems([...cartItems, {
+        cartKey,
         id: dish.id,
         name: dish.name,
         price: dish.price,
@@ -217,14 +253,16 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
         discount_percent: dish.discount_percent,
         image_url: dish.image_url,
         category_name: dish.category_name,
+        chair_number: chairNum,
+        chair_label: chairLbl,
         quantity: 1
       }]);
     }
   };
 
-  const handleUpdateCartQty = (id, delta) => {
+  const handleUpdateCartQty = (keyOrId, delta) => {
     setCartItems(cartItems.map(i => {
-      if (i.id === id) {
+      if (i.cartKey === keyOrId || i.id === keyOrId) {
         const nextQty = i.quantity + delta;
         return nextQty > 0 ? { ...i, quantity: nextQty } : null;
       }
@@ -232,8 +270,24 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
     }).filter(Boolean));
   };
 
-  const handleRemoveFromCart = (id) => {
-    setCartItems(cartItems.filter(i => i.id !== id));
+  const handleRemoveFromCart = (keyOrId) => {
+    setCartItems(cartItems.filter(i => (i.cartKey !== keyOrId && i.id !== keyOrId)));
+  };
+
+  const handleItemChairChange = (cartKey, newChairNum) => {
+    const cNum = parseInt(newChairNum, 10);
+    const cLbl = cNum === 0 ? 'Shared / Whole Table' : `Chair ${cNum}`;
+    setCartItems(cartItems.map(item => {
+      if (item.cartKey === cartKey) {
+        return {
+          ...item,
+          chair_number: cNum,
+          chair_label: cLbl,
+          cartKey: `${item.id}-c${cNum}`
+        };
+      }
+      return item;
+    }));
   };
 
   // Calculate Cart Totals
@@ -243,7 +297,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
   const cartTax = parseFloat(((cartSubtotal * 5) / 100).toFixed(2));
   const cartEstimatedTotal = parseFloat((cartSubtotal + cartTax).toFixed(2));
 
-  // Submit Order to Cashier
+  // Submit Order to Cashier (includes Room, Table, and Chair assignments)
   const handleSubmitOrderToCashier = async () => {
     if (cartItems.length === 0) {
       alert('Please add at least one dish to the order.');
@@ -262,10 +316,16 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
+          room_id: selectedRoomId,
           table_number: selectedTableNum,
           customer_name: orderCustomerName,
           customer_phone: orderCustomerPhone,
-          items: cartItems.map(i => ({ menu_item_id: i.id, quantity: i.quantity })),
+          items: cartItems.map(i => ({ 
+            menu_item_id: i.id, 
+            quantity: i.quantity,
+            chair_number: i.chair_number !== undefined ? i.chair_number : 1,
+            chair_label: i.chair_label || (i.chair_number === 0 ? 'Shared' : `Chair ${i.chair_number || 1}`)
+          })),
           notes: orderNotes
         })
       });
@@ -579,352 +639,644 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
       )}
 
       {/* ======================================================== */}
-      {/* TAB 1: TABLE SITTING & STATUS MAP                        */}
+      {/* TAB 1: TABLE SITTING & STATUS MAP WITH ROOMS & CHAIRS    */}
       {/* ======================================================== */}
-      {activeTab === 'tables' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* Status Legend Bar */}
-          <div style={{
-            background: '#FFF',
-            borderRadius: '14px',
-            padding: '14px 20px',
-            border: '1px solid #E2E8F0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '12px',
-            fontSize: '12px',
-            fontWeight: '700'
-          }}>
-            <span style={{ color: '#64748B' }}>CUSTOMER STATUS:</span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16A34A' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#16A34A' }}></span>
-                Available (Ready)
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#D97706' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#D97706' }}></span>
-                Seated (Browsing)
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#2563EB' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#2563EB' }}></span>
-                Order Sent to Cashier
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#7E22CE' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#7E22CE' }}></span>
-                Bill Ready
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#059669' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#059669' }}></span>
-                Food Ready to Serve
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0D9488' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#0D9488' }}></span>
-                Dining / Served
-              </span>
-            </div>
-          </div>
+      {activeTab === 'tables' && (() => {
+        const currentRoomId = selectedRoomId || (rooms[0]?.id || null);
+        const currentRoom = rooms.find(r => r.id === currentRoomId) || rooms[0] || null;
+        const roomTables = tables.filter(t => !currentRoomId || t.room_id === currentRoomId);
 
-          {/* Tables Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
-            gap: '18px'
-          }}>
-            {tables.map(tbl => {
-              const isAvailable = tbl.status === 'Available';
-              const isSeated = tbl.status === 'Seated';
-              const isOrderPlaced = tbl.status === 'Order Placed';
-              const isBillReady = tbl.status === 'Bill Ready';
-              const isFoodReady = tbl.status === 'Food Ready';
-              const isServed = tbl.status === 'Served';
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* Step 1: Room / Floor Selector Option */}
+            <div style={{
+              background: '#FFF',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Building2 size={20} color="#7E22CE" />
+                <div>
+                  <span style={{ fontSize: '14px', fontWeight: '900', color: '#0F172A', display: 'block' }}>
+                    SELECT DINING ROOM / FLOOR
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#64748B' }}>
+                    Choose a room to view its 10 tables and 4 chairs per table
+                  </span>
+                </div>
+              </div>
 
-              let borderColor = '#E2E8F0';
-              let badgeBg = '#F1F5F9';
-              let badgeColor = '#475569';
-
-              if (isAvailable) {
-                borderColor = '#86EFAC';
-                badgeBg = '#DCFCE7';
-                badgeColor = '#15803D';
-              } else if (isSeated) {
-                borderColor = '#FDE68A';
-                badgeBg = '#FEF3C7';
-                badgeColor = '#B45309';
-              } else if (isOrderPlaced) {
-                borderColor = '#BFDBFE';
-                badgeBg = '#EFF6FF';
-                badgeColor = '#1D4ED8';
-              } else if (isBillReady) {
-                borderColor = '#E9D5FF';
-                badgeBg = '#F3E8FF';
-                badgeColor = '#7E22CE';
-              } else if (isFoodReady) {
-                borderColor = '#10B981';
-                badgeBg = '#D1FAE5';
-                badgeColor = '#065F46';
-              } else if (isServed) {
-                borderColor = '#99F6E4';
-                badgeBg = '#CCFBF1';
-                badgeColor = '#0F766E';
-              }
-
-              return (
-                <div
-                  key={tbl.id}
-                  style={{
-                    background: '#FFF',
-                    borderRadius: '16px',
-                    border: `2px solid ${borderColor}`,
-                    padding: '20px',
-                    boxShadow: isFoodReady ? '0 4px 18px rgba(16, 185, 129, 0.25)' : '0 2px 8px rgba(0,0,0,0.03)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    gap: '14px'
-                  }}
-                >
-                  <div>
-                    {/* Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
-                          background: '#0F172A',
-                          color: '#FFF',
-                          padding: '4px 12px',
-                          borderRadius: '8px',
-                          fontSize: '15px',
-                          fontWeight: '900'
-                        }}>
-                          TABLE #{tbl.table_number}
-                        </span>
-                        <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>
-                          {tbl.capacity} Seats
-                        </span>
-                      </div>
-
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flexWrap: 'wrap' }}>
+                {rooms.map(room => {
+                  const isSelected = room.id === currentRoomId;
+                  const roomTbls = tables.filter(t => t.room_id === room.id);
+                  const availCount = roomTbls.filter(t => t.status === 'Available').length;
+                  return (
+                    <button
+                      key={room.id}
+                      onClick={() => setSelectedRoomId(room.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px 18px',
+                        borderRadius: '12px',
+                        border: isSelected ? '2px solid #7E22CE' : '1px solid #CBD5E1',
+                        background: isSelected ? 'linear-gradient(135deg, #F3E8FF 0%, #EDE9FE 100%)' : '#FFF',
+                        color: isSelected ? '#6B21A8' : '#334155',
+                        fontSize: '13px',
+                        fontWeight: isSelected ? '800' : '600',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isSelected ? '0 2px 8px rgba(126, 34, 206, 0.2)' : 'none'
+                      }}
+                    >
+                      <span>🏢 {room.name}</span>
                       <span style={{
-                        background: badgeBg,
-                        color: badgeColor,
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
+                        background: isSelected ? '#7E22CE' : '#F1F5F9',
+                        color: isSelected ? '#FFF' : '#475569',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        fontSize: '11px',
                         fontWeight: '800'
                       }}>
-                        {tbl.status}
+                        {roomTbls.length || 10} Tables • {availCount} Free
                       </span>
-                    </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                    {/* Customer Info */}
-                    <div style={{
-                      background: '#F8FAFC',
-                      borderRadius: '8px',
-                      padding: '10px 12px',
-                      fontSize: '12px',
-                      minHeight: '60px',
+            {/* Status Legend Bar */}
+            <div style={{
+              background: '#FFF',
+              borderRadius: '14px',
+              padding: '12px 18px',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              fontSize: '12px',
+              fontWeight: '700'
+            }}>
+              <span style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontWeight: '800', color: '#0F172A' }}>{currentRoom?.name || 'Selected Room'}:</span>
+                <span>{roomTables.length} Tables • {roomTables.reduce((a, b) => a + (b.capacity || 4), 0)} Chairs</span>
+              </span>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16A34A' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#16A34A' }}></span>
+                  Available (Clean)
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#D97706' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#D97706' }}></span>
+                  Seated (Browsing)
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#2563EB' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#2563EB' }}></span>
+                  Order Placed
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#7E22CE' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#7E22CE' }}></span>
+                  Bill Ready
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#059669' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#059669' }}></span>
+                  Food Ready
+                </span>
+              </div>
+            </div>
+
+            {/* Tables Grid for Current Room */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
+              gap: '18px'
+            }}>
+              {roomTables.map(tbl => {
+                const isAvailable = tbl.status === 'Available';
+                const isSeated = tbl.status === 'Seated';
+                const isOrderPlaced = tbl.status === 'Order Placed';
+                const isBillReady = tbl.status === 'Bill Ready';
+                const isFoodReady = tbl.status === 'Food Ready';
+                const isServed = tbl.status === 'Served';
+
+                let borderColor = '#E2E8F0';
+                let badgeBg = '#F1F5F9';
+                let badgeColor = '#475569';
+
+                if (isAvailable) {
+                  borderColor = '#86EFAC';
+                  badgeBg = '#DCFCE7';
+                  badgeColor = '#15803D';
+                } else if (isSeated) {
+                  borderColor = '#FDE68A';
+                  badgeBg = '#FEF3C7';
+                  badgeColor = '#B45309';
+                } else if (isOrderPlaced) {
+                  borderColor = '#BFDBFE';
+                  badgeBg = '#EFF6FF';
+                  badgeColor = '#1D4ED8';
+                } else if (isBillReady) {
+                  borderColor = '#E9D5FF';
+                  badgeBg = '#F3E8FF';
+                  badgeColor = '#7E22CE';
+                } else if (isFoodReady) {
+                  borderColor = '#10B981';
+                  badgeBg = '#D1FAE5';
+                  badgeColor = '#065F46';
+                } else if (isServed) {
+                  borderColor = '#99F6E4';
+                  badgeBg = '#CCFBF1';
+                  badgeColor = '#0F766E';
+                }
+
+                return (
+                  <div
+                    key={tbl.id}
+                    style={{
+                      background: '#FFF',
+                      borderRadius: '16px',
+                      border: `2px solid ${borderColor}`,
+                      padding: '18px',
+                      boxShadow: isFoodReady ? '0 4px 18px rgba(16, 185, 129, 0.25)' : '0 2px 8px rgba(0,0,0,0.03)',
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'center',
-                      gap: '4px'
-                    }}>
-                      {isAvailable ? (
-                        <div style={{ color: '#16A34A', fontWeight: '700', textAlign: 'center' }}>
-                          ✨ Table is clean and ready for guests
-                        </div>
-                      ) : (
-                        <>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: '#64748B' }}>Guest:</span>
-                            <span style={{ fontWeight: '800', color: '#0F172A' }}>{tbl.customer_name || 'Walk-in'}</span>
-                          </div>
-                          {tbl.customer_phone && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span style={{ color: '#64748B' }}>Phone:</span>
-                              <span style={{ fontWeight: '600' }}>{tbl.customer_phone}</span>
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B' }}>
-                            <span>Party Size:</span>
-                            <span style={{ fontWeight: '700', color: '#0F172A' }}>{tbl.guests_count || 1} Guests</span>
-                          </div>
-                          {tbl.seated_elapsed_minutes !== null && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94A3B8', fontSize: '11px', marginTop: '2px' }}>
-                              <Clock size={11} />
-                              <span>Seated {tbl.seated_elapsed_minutes} mins ago</span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Table Action Buttons */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {isAvailable && (
-                      <button
-                        onClick={() => handleOpenSeatModal(tbl)}
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          background: '#16A34A',
-                          color: '#FFF',
-                          fontWeight: '800',
-                          fontSize: '13px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <Users size={16} />
-                        <span>Seat Customer Here</span>
-                      </button>
-                    )}
-
-                    {isSeated && (
-                      <button
-                        onClick={() => handleStartOrderForTable(tbl)}
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          background: '#7E22CE',
-                          color: '#FFF',
-                          fontWeight: '800',
-                          fontSize: '13px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <UtensilsCrossed size={16} />
-                        <span>Take & Submit Order</span>
-                      </button>
-                    )}
-
-                    {isOrderPlaced && (
-                      <div style={{
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        background: '#EFF6FF',
-                        color: '#1D4ED8',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        textAlign: 'center'
-                      }}>
-                        ⏳ Order Sent. Awaiting Cashier Billing...
-                      </div>
-                    )}
-
-                    {isBillReady && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          onClick={() => handleViewReceipt(tbl.current_order_id)}
-                          style={{
-                            flex: 1,
-                            padding: '9px',
+                      justifyContent: 'space-between',
+                      gap: '12px'
+                    }}
+                  >
+                    <div>
+                      {/* Header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{
+                            background: '#0F172A',
+                            color: '#FFF',
+                            padding: '4px 12px',
                             borderRadius: '8px',
-                            background: '#7E22CE',
+                            fontSize: '15px',
+                            fontWeight: '900'
+                          }}>
+                            TABLE #{tbl.table_number}
+                          </span>
+                          <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>
+                            {tbl.capacity} Chairs
+                          </span>
+                        </div>
+
+                        <span style={{
+                          background: badgeBg,
+                          color: badgeColor,
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '800'
+                        }}>
+                          {tbl.status}
+                        </span>
+                      </div>
+
+                      {/* Customer Info */}
+                      <div style={{
+                        background: '#F8FAFC',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        fontSize: '12px',
+                        minHeight: '52px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        gap: '3px'
+                      }}>
+                        {isAvailable ? (
+                          <div style={{ color: '#16A34A', fontWeight: '700', textAlign: 'center' }}>
+                            ✨ Table is clean & 4 chairs ready for guests
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#64748B' }}>Guest:</span>
+                              <span style={{ fontWeight: '800', color: '#0F172A' }}>{tbl.customer_name || 'Walk-in'}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B' }}>
+                              <span>Party Size:</span>
+                              <span style={{ fontWeight: '700', color: '#0F172A' }}>{tbl.guests_count || 1} Guests</span>
+                            </div>
+                            {tbl.seated_elapsed_minutes !== null && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94A3B8', fontSize: '11px' }}>
+                                <Clock size={11} />
+                                <span>Seated {tbl.seated_elapsed_minutes} mins ago</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Visual Realistic 4-Chairs Seating Map */}
+                      <div style={{
+                        marginTop: '10px',
+                        background: '#F1F5F9',
+                        borderRadius: '12px',
+                        padding: '10px',
+                        border: '1px solid #E2E8F0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', fontWeight: '800', color: '#64748B' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Armchair size={13} color="#7E22CE" />
+                            <span>CHAIR SEATING BASES ({tbl.capacity} CHAIRS):</span>
+                          </span>
+                          <span style={{ fontSize: '10px', color: '#7E22CE' }}>Click chair to order</span>
+                        </div>
+
+                        {/* Interactive Chairs Grid */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: `repeat(${Math.min(4, tbl.capacity || 4)}, 1fr)`,
+                          gap: '6px'
+                        }}>
+                          {Array.from({ length: tbl.capacity || 4 }, (_, idx) => {
+                            const cNum = idx + 1;
+                            const cItems = (tbl.active_items || []).filter(i => i.chair_number === cNum);
+                            const hasOrder = cItems.length > 0;
+
+                            return (
+                              <button
+                                key={cNum}
+                                type="button"
+                                onClick={() => handleStartOrderForTable(tbl, cNum)}
+                                title={hasOrder 
+                                  ? `Chair #${cNum}: ${cItems.map(i => `${i.quantity}x ${i.item_name}`).join(', ')}`
+                                  : `Click to Take Order for Chair #${cNum}`}
+                                style={{
+                                  padding: '6px 4px',
+                                  borderRadius: '8px',
+                                  border: hasOrder ? '1.5px solid #2563EB' : '1px solid #CBD5E1',
+                                  background: hasOrder ? '#EFF6FF' : '#FFF',
+                                  color: hasOrder ? '#1D4ED8' : '#334155',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease'
+                                }}
+                              >
+                                <Armchair size={14} color={hasOrder ? '#2563EB' : '#64748B'} />
+                                <span style={{ fontSize: '10px', fontWeight: '800', marginTop: '2px' }}>
+                                  Chair {cNum}
+                                </span>
+                                {hasOrder ? (
+                                  <span style={{ fontSize: '9px', background: '#2563EB', color: '#FFF', padding: '0 4px', borderRadius: '4px', fontWeight: '800', marginTop: '1px' }}>
+                                    {cItems.reduce((acc, ci) => acc + ci.quantity, 0)} dishes
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '9px', color: '#94A3B8' }}>Ready</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Table Action Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {isAvailable && (
+                        <button
+                          onClick={() => handleOpenSeatModal(tbl)}
+                          style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            background: '#16A34A',
                             color: '#FFF',
                             fontWeight: '800',
-                            fontSize: '12px',
+                            fontSize: '13px',
                             border: 'none',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '4px'
+                            gap: '6px'
                           }}
                         >
-                          <Printer size={14} />
-                          <span>View & Print Bill</span>
+                          <Users size={16} />
+                          <span>Seat Customer at Table #{tbl.table_number}</span>
                         </button>
+                      )}
+
+                      {(isSeated || isAvailable) && (
                         <button
-                          onClick={() => handleMarkBillDelivered(tbl.current_order_id)}
-                          title="Mark receipt handed to customer"
+                          onClick={() => handleStartOrderForTable(tbl, 1)}
                           style={{
-                            padding: '9px 12px',
+                            width: '100%',
+                            padding: '10px',
                             borderRadius: '8px',
-                            background: '#F3E8FF',
-                            color: '#6B21A8',
+                            background: '#7E22CE',
+                            color: '#FFF',
                             fontWeight: '800',
-                            fontSize: '12px',
-                            border: '1px solid #D8B4FE',
+                            fontSize: '13px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <UtensilsCrossed size={16} />
+                          <span>Take Order (Chair-by-Chair)</span>
+                        </button>
+                      )}
+
+                      {isOrderPlaced && (
+                        <div style={{
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          background: '#EFF6FF',
+                          color: '#1D4ED8',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          textAlign: 'center'
+                        }}>
+                          ⏳ Order Sent to Cashier for Billing Calculation...
+                        </div>
+                      )}
+
+                      {isBillReady && (
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => handleViewReceipt(tbl.current_order_id)}
+                            style={{
+                              flex: 1,
+                              padding: '9px',
+                              borderRadius: '8px',
+                              background: '#7E22CE',
+                              color: '#FFF',
+                              fontWeight: '800',
+                              fontSize: '12px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <Printer size={14} />
+                            <span>View & Print Bill</span>
+                          </button>
+                          <button
+                            onClick={() => handleMarkBillDelivered(tbl.current_order_id)}
+                            title="Mark receipt handed to customer"
+                            style={{
+                              padding: '9px 12px',
+                              borderRadius: '8px',
+                              background: '#F3E8FF',
+                              color: '#6B21A8',
+                              fontWeight: '800',
+                              fontSize: '12px',
+                              border: '1px solid #D8B4FE',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Handed
+                          </button>
+                        </div>
+                      )}
+
+                      {isFoodReady && (
+                        <button
+                          onClick={() => handleMarkServed(tbl.current_order_id, tbl.table_number)}
+                          style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            background: '#059669',
+                            color: '#FFF',
+                            fontWeight: '900',
+                            fontSize: '13px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
+                          }}
+                        >
+                          <CheckCircle2 size={16} />
+                          <span>Food Ready! Serve to Chairs</span>
+                        </button>
+                      )}
+
+                      {!isAvailable && (
+                        <button
+                          onClick={() => handleClearTable(tbl.table_number)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 10px',
+                            borderRadius: '6px',
+                            background: '#F1F5F9',
+                            color: '#475569',
+                            fontWeight: '700',
+                            fontSize: '11px',
+                            border: '1px solid #E2E8F0',
                             cursor: 'pointer'
                           }}
                         >
-                          Handed
+                          Clear / Free Table
                         </button>
-                      </div>
-                    )}
-
-                    {isFoodReady && (
-                      <button
-                        onClick={() => handleMarkServed(tbl.current_order_id, tbl.table_number)}
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          background: '#059669',
-                          color: '#FFF',
-                          fontWeight: '900',
-                          fontSize: '13px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
-                        }}
-                      >
-                        <CheckCircle2 size={16} />
-                        <span>Food Ready! Click to Serve</span>
-                      </button>
-                    )}
-
-                    {!isAvailable && (
-                      <button
-                        onClick={() => handleClearTable(tbl.table_number)}
-                        style={{
-                          width: '100%',
-                          padding: '6px 10px',
-                          borderRadius: '6px',
-                          background: '#F1F5F9',
-                          color: '#475569',
-                          fontWeight: '700',
-                          fontSize: '11px',
-                          border: '1px solid #E2E8F0',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Clear / Free Table
-                      </button>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ======================================================== */}
       {/* TAB 2: MENU & ORDER TAKING (DISHES & CART)               */}
       {/* ======================================================== */}
       {activeTab === 'order' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '20px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '20px', alignItems: 'start' }}>
           
           {/* Left: Dishes Catalog */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* Step Selection Stepper: Room/Floor ➔ Table ➔ Chair ➔ Order */}
+            <div style={{
+              background: '#FFF',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              border: '1.5px solid #7E22CE',
+              boxShadow: '0 4px 16px rgba(126, 34, 206, 0.08)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ background: '#7E22CE', color: '#FFF', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '900' }}>
+                    SELECTION FLOW
+                  </span>
+                  <span style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A' }}>
+                    Room/Floor ➔ Table ➔ Chair ➔ Take Order
+                  </span>
+                </div>
+
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#7E22CE', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>Currently Adding Dishes For:</span>
+                  <span style={{ background: '#F3E8FF', color: '#6B21A8', padding: '3px 10px', borderRadius: '12px', border: '1px solid #D8B4FE', fontWeight: '800' }}>
+                    🪑 {selectedChair === 0 ? 'Shared / Whole Table' : `Chair #${selectedChair}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* 3-Step Selection Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', alignItems: 'center' }}>
+                {/* 1. Room/Floor */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748B', marginBottom: '4px' }}>
+                    1. ROOM / FLOOR
+                  </label>
+                  <select
+                    value={selectedRoomId || (rooms[0]?.id || '')}
+                    onChange={(e) => {
+                      const rId = parseInt(e.target.value, 10);
+                      setSelectedRoomId(rId);
+                      const roomTbls = tables.filter(t => t.room_id === rId);
+                      if (roomTbls.length > 0) {
+                        setSelectedTableNum(roomTbls[0].table_number);
+                        setOrderCustomerName(roomTbls[0].customer_name || '');
+                        setOrderCustomerPhone(roomTbls[0].customer_phone || '');
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      color: '#0F172A'
+                    }}
+                  >
+                    {rooms.map(r => (
+                      <option key={r.id} value={r.id}>
+                        🏢 {r.name} (F{r.floor_number})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Table */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748B', marginBottom: '4px' }}>
+                    2. TABLE
+                  </label>
+                  <select
+                    value={selectedTableNum}
+                    onChange={(e) => {
+                      const num = parseInt(e.target.value, 10);
+                      setSelectedTableNum(num);
+                      const tbl = tables.find(t => t.table_number === num);
+                      if (tbl && tbl.customer_name) setOrderCustomerName(tbl.customer_name);
+                      if (tbl && tbl.customer_phone) setOrderCustomerPhone(tbl.customer_phone);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      color: '#0F172A'
+                    }}
+                  >
+                    {tables
+                      .filter(t => !selectedRoomId || t.room_id === selectedRoomId)
+                      .map(t => (
+                        <option key={t.id} value={t.table_number}>
+                          Table #{t.table_number} ({t.status} - {t.capacity} Chairs) {t.customer_name ? `[${t.customer_name}]` : ''}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* 3. Chair Selection */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748B', marginBottom: '4px' }}>
+                    3. SELECT CHAIR (SEAT)
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {Array.from({ length: (tables.find(t => t.table_number === selectedTableNum)?.capacity || 4) }, (_, idx) => {
+                      const cNum = idx + 1;
+                      const isSelected = selectedChair === cNum;
+                      return (
+                        <button
+                          key={cNum}
+                          type="button"
+                          onClick={() => setSelectedChair(cNum)}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            border: isSelected ? '1.5px solid #7E22CE' : '1px solid #CBD5E1',
+                            background: isSelected ? '#7E22CE' : '#FFF',
+                            color: isSelected ? '#FFF' : '#334155',
+                            fontSize: '12px',
+                            fontWeight: '800',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <Armchair size={12} />
+                          <span>C{cNum}</span>
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedChair(0)}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '8px',
+                        border: selectedChair === 0 ? '1.5px solid #2563EB' : '1px solid #CBD5E1',
+                        background: selectedChair === 0 ? '#2563EB' : '#FFF',
+                        color: selectedChair === 0 ? '#FFF' : '#334155',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Shared
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             {/* Search & Category Pills */}
             <div style={{
@@ -1006,7 +1358,8 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
               gap: '14px'
             }}>
               {filteredMenuItems.map(dish => {
-                const inCart = cartItems.find(i => i.id === dish.id);
+                const dishItemsInCart = cartItems.filter(i => i.id === dish.id);
+                const totalDishQtyInCart = dishItemsInCart.reduce((sum, ci) => sum + ci.quantity, 0);
                 const hasDiscount = dish.has_discount;
 
                 return (
@@ -1015,11 +1368,11 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                     style={{
                       background: '#FFF',
                       borderRadius: '16px',
-                      border: inCart ? '2px solid #7E22CE' : '1px solid #E2E8F0',
+                      border: totalDishQtyInCart > 0 ? '2px solid #7E22CE' : '1px solid #E2E8F0',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      boxShadow: inCart ? '0 6px 20px rgba(126, 34, 206, 0.15)' : '0 2px 10px rgba(0,0,0,0.04)',
+                      boxShadow: totalDishQtyInCart > 0 ? '0 6px 20px rgba(126, 34, 206, 0.15)' : '0 2px 10px rgba(0,0,0,0.04)',
                       position: 'relative',
                       overflow: 'hidden',
                       transition: 'all 0.25s ease'
@@ -1121,28 +1474,8 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                           )}
                         </div>
 
-                        {/* Add / Qty Controls */}
-                        {inCart ? (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F3E8FF', border: '1px solid #D8B4FE', borderRadius: '10px', padding: '4px 10px' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateCartQty(dish.id, -1)}
-                              style={{ background: '#FFF', border: '1px solid #D8B4FE', borderRadius: '6px', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7E22CE' }}
-                            >
-                              <Minus size={15} />
-                            </button>
-                            <span style={{ fontWeight: '900', color: '#6B21A8', fontSize: '15px' }}>
-                              {inCart.quantity} in order
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateCartQty(dish.id, 1)}
-                              style={{ background: '#FFF', border: '1px solid #D8B4FE', borderRadius: '6px', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7E22CE' }}
-                            >
-                              <Plus size={15} />
-                            </button>
-                          </div>
-                        ) : (
+                        {/* Add to Order Button with Active Chair Target */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           <button
                             type="button"
                             onClick={() => handleAddToCart(dish)}
@@ -1164,9 +1497,23 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                             }}
                           >
                             <Plus size={15} />
-                            <span>Add to Order</span>
+                            <span>+ Add to {selectedChair === 0 ? 'Shared' : `Chair ${selectedChair}`}</span>
                           </button>
-                        )}
+                          {totalDishQtyInCart > 0 && (
+                            <div style={{
+                              textAlign: 'center',
+                              fontSize: '11px',
+                              fontWeight: '800',
+                              color: '#6B21A8',
+                              background: '#F3E8FF',
+                              border: '1px solid #D8B4FE',
+                              borderRadius: '6px',
+                              padding: '4px 8px'
+                            }}>
+                              ✓ {totalDishQtyInCart} in tray ({dishItemsInCart.map(i => `${i.quantity}x ${i.chair_label}`).join(', ')})
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1209,6 +1556,41 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
               </p>
             </div>
 
+            {/* Current Room & Table Context Banner */}
+            {(() => {
+              const currentRoom = rooms.find(r => r.id === selectedRoomId) || rooms[0];
+              const currentTbl = tables.find(t => t.table_number === selectedTableNum);
+              return (
+                <div style={{
+                  background: 'linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)',
+                  border: '1.5px solid #D8B4FE',
+                  borderRadius: '10px',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Building2 size={16} color="#7E22CE" />
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#6B21A8' }}>
+                      {currentRoom?.name || 'Dining Room'}
+                    </span>
+                  </div>
+                  <span style={{
+                    background: '#7E22CE',
+                    color: '#FFF',
+                    padding: '3px 10px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '900'
+                  }}>
+                    Table #{selectedTableNum} ({currentTbl?.capacity || 4} Chairs)
+                  </span>
+                </div>
+              );
+            })()}
+
             {/* Target Table Selector */}
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>
@@ -1220,6 +1602,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                   const num = parseInt(e.target.value, 10);
                   setSelectedTableNum(num);
                   const tbl = tables.find(t => t.table_number === num);
+                  if (tbl && tbl.room_id) setSelectedRoomId(tbl.room_id);
                   if (tbl && tbl.customer_name) setOrderCustomerName(tbl.customer_name);
                   if (tbl && tbl.customer_phone) setOrderCustomerPhone(tbl.customer_phone);
                 }}
@@ -1235,7 +1618,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
               >
                 {tables.map(t => (
                   <option key={t.id} value={t.table_number}>
-                    Table #{t.table_number} ({t.status} - {t.capacity} Seats) {t.customer_name ? `[${t.customer_name}]` : ''}
+                    {t.room_name ? `${t.room_name} • ` : ''}Table #{t.table_number} ({t.status} - {t.capacity} Seats) {t.customer_name ? `[${t.customer_name}]` : ''}
                   </option>
                 ))}
               </select>
@@ -1281,75 +1664,142 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
               </div>
             </div>
 
-            {/* Cart Items List */}
+            {/* Cart Items List with Chair Labels & Stepper */}
             <div style={{
-              maxHeight: '200px',
+              maxHeight: '230px',
               overflowY: 'auto',
               border: '1px solid #F1F5F9',
-              borderRadius: '8px',
-              padding: '6px 8px'
+              borderRadius: '10px',
+              padding: '6px 8px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
             }}>
               {cartItems.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px 10px', color: '#94A3B8', fontSize: '12px' }}>
-                  No dishes added yet. Click &quot;Add to Order&quot; on any dish.
+                  No dishes added yet. Click &quot;+ Add to Chair&quot; on any dish.
                 </div>
               ) : (
                 cartItems.map(item => (
                   <div
-                    key={item.id}
+                    key={item.cartKey || `${item.id}-${item.chair_number}`}
                     style={{
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 0',
-                      borderBottom: '1px dashed #E2E8F0',
+                      flexDirection: 'column',
+                      gap: '5px',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      background: '#F8FAFC',
+                      border: '1px solid #E2E8F0',
                       fontSize: '12px'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, paddingRight: '8px' }}>
-                      <DishImage
-                        src={item.image_url}
-                        alt={item.name}
-                        category={item.category_name}
-                        price={item.price}
-                        discount_pct={item.discount_pct}
-                        description={item.description}
-                        size="sm"
-                        style={{
-                          width: '36px',
-                          height: '36px',
-                          minWidth: '36px',
-                          minHeight: '36px',
-                          borderRadius: '8px',
-                          border: '1px solid #CBD5E1'
-                        }}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {item.name}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                        <DishImage
+                          src={item.image_url}
+                          alt={item.name}
+                          category={item.category_name}
+                          price={item.price}
+                          discount_pct={item.discount_pct}
+                          description={item.description}
+                          size="sm"
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            minWidth: '32px',
+                            minHeight: '32px',
+                            borderRadius: '6px',
+                            border: '1px solid #CBD5E1'
+                          }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.name}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>
+                            ₹{item.discounted_price.toFixed(2)} each
+                            {item.discount_percent > 0 && (
+                              <span style={{ color: '#16A34A', marginLeft: '4px', fontWeight: '700' }}>
+                                (-{parseFloat(item.discount_percent).toFixed(0)}%)
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#64748B' }}>
-                          {item.quantity} × ₹{item.discounted_price.toFixed(2)}
-                          {item.discount_percent > 0 && (
-                            <span style={{ color: '#16A34A', marginLeft: '4px', fontWeight: '700' }}>
-                              (-{parseFloat(item.discount_percent).toFixed(0)}%)
-                            </span>
-                          )}
-                        </div>
+                      </div>
+
+                      <div style={{ fontWeight: '900', color: '#0F172A', fontSize: '13px' }}>
+                        ₹{(item.discounted_price * item.quantity).toFixed(2)}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: '800', color: '#0F172A' }}>
-                        ₹{(item.discounted_price * item.quantity).toFixed(2)}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFromCart(item.id)}
-                        style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '2px' }}
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                    {/* Chair badge + Reassign Chair dropdown + Qty Stepper + Trash */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '4px', borderTop: '1px dashed #CBD5E1' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          background: item.chair_number === 0 ? '#EFF6FF' : '#F3E8FF',
+                          color: item.chair_number === 0 ? '#1D4ED8' : '#6B21A8',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: '800'
+                        }}>
+                          🪑 {item.chair_label}
+                        </span>
+
+                        <select
+                          value={item.chair_number}
+                          onChange={(e) => handleItemChairChange(item.cartKey, e.target.value)}
+                          title="Reassign dish to another chair"
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: '700',
+                            padding: '2px 4px',
+                            borderRadius: '4px',
+                            border: '1px solid #CBD5E1',
+                            background: '#FFF',
+                            color: '#475569',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {Array.from({ length: (tables.find(t => t.table_number === selectedTableNum)?.capacity || 4) }, (_, idx) => {
+                            const cn = idx + 1;
+                            return <option key={cn} value={cn}>Chair {cn}</option>;
+                          })}
+                          <option value={0}>Shared</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: '#FFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '1px 4px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateCartQty(item.cartKey, -1)}
+                            style={{ background: 'transparent', border: 'none', color: '#7E22CE', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                          >
+                            <Minus size={12} />
+                          </button>
+                          <span style={{ fontSize: '12px', fontWeight: '800', minWidth: '16px', textAlign: 'center' }}>
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateCartQty(item.cartKey, 1)}
+                            style={{ background: 'transparent', border: 'none', color: '#7E22CE', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFromCart(item.cartKey)}
+                          title="Remove item"
+                          style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -1507,7 +1957,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                   >
                     {/* Header Row */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                         <span style={{
                           background: '#0F172A',
                           color: '#FFF',
@@ -1518,6 +1968,18 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                         }}>
                           TABLE #{ord.table_number}
                         </span>
+                        {ord.room_name && (
+                          <span style={{
+                            background: '#F1F5F9',
+                            color: '#475569',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: '800'
+                          }}>
+                            🏢 {ord.room_name}
+                          </span>
+                        )}
                         <div>
                           <div style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A' }}>
                             {ord.customer_name || 'Dine-in Guest'}
@@ -1662,7 +2124,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                               background: '#F8FAFC',
                               border: '1px solid #E2E8F0',
                               borderRadius: '8px',
-                              padding: '3px 8px 3px 4px',
+                              padding: '4px 8px 4px 5px',
                               boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                             }}
                           >
@@ -1673,9 +2135,23 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                               size="sm"
                               style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', borderRadius: '6px' }}
                             />
-                            <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A' }}>
-                              {i.quantity}× {i.item_name}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A' }}>
+                                {i.quantity}× {i.item_name}
+                              </span>
+                              {i.chair_label && (
+                                <span style={{
+                                  background: i.chair_number === 0 ? '#EFF6FF' : '#F3E8FF',
+                                  color: i.chair_number === 0 ? '#1D4ED8' : '#7E22CE',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  fontSize: '10px',
+                                  fontWeight: '800'
+                                }}>
+                                  🪑 {i.chair_label}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>

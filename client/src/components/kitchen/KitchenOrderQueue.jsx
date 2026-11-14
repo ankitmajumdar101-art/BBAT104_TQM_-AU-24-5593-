@@ -237,7 +237,7 @@ export default function KitchenOrderQueue({ status, title, subtitle, nextStatus,
                       fontWeight: '900',
                       letterSpacing: '0.3px'
                     }}>
-                      TABLE #{order.table_number}
+                      TABLE #{order.table_number}{order.room_name ? ` • ${order.room_name}` : ''}
                     </span>
 
                     <span style={{
@@ -333,8 +333,20 @@ export default function KitchenOrderQueue({ status, title, subtitle, nextStatus,
                               border: '1px solid #CBD5E1'
                             }}
                           />
-                          <span style={{ fontSize: '13px', fontWeight: '800', color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {item.item_name}
+                          <span style={{ fontSize: '13px', fontWeight: '800', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                            <span>{item.item_name}</span>
+                            {item.chair_label && (
+                              <span style={{
+                                fontSize: '10px',
+                                background: item.chair_number === 0 ? '#EFF6FF' : '#F3E8FF',
+                                color: item.chair_number === 0 ? '#1D4ED8' : '#7E22CE',
+                                padding: '1px 5px',
+                                borderRadius: '4px',
+                                fontWeight: '800'
+                              }}>
+                                🪑 {item.chair_label}
+                              </span>
+                            )}
                           </span>
                         </div>
                         <span style={{
