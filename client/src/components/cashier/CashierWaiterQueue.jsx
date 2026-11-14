@@ -323,6 +323,7 @@ export default function CashierWaiterQueue({ onBillFinalized }) {
                             <DishImage
                               src={itm.image_url}
                               alt={itm.item_name}
+                              price={itm.price}
                               size="sm"
                               style={{ width: '30px', height: '30px', minWidth: '30px', minHeight: '30px', borderRadius: '6px' }}
                             />

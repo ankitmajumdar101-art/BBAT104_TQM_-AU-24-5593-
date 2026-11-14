@@ -586,6 +586,9 @@ export default function OwnerMenu() {
                             src={item.image_url}
                             alt={item.name}
                             category={item.category_name}
+                            price={item.price}
+                            discount_pct={item.discount_pct}
+                            description={item.description}
                             size="md"
                             style={{
                               width: '46px',
@@ -951,6 +954,9 @@ export default function OwnerMenu() {
                   <DishImage
                     src={itemForm.image_url}
                     alt={itemForm.name || 'Preview'}
+                    price={itemForm.price}
+                    discount_pct={itemForm.discount_pct}
+                    description={itemForm.description}
                     size="md"
                     style={{ borderRadius: '8px', border: '1px solid #CBD5E1', flexShrink: 0 }}
                   />

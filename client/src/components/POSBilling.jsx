@@ -292,6 +292,9 @@ export default function POSBilling({ user }) {
                   src={item.image_url}
                   alt={item.name}
                   category={item.category_name}
+                  price={item.price}
+                  discount_pct={item.discount_pct}
+                  description={item.description}
                   size="banner"
                   style={{ height: '100%', borderRadius: '0' }}
                 />
@@ -478,6 +481,8 @@ export default function POSBilling({ user }) {
                       src={item.image_url}
                       alt={item.name}
                       category={item.category_name}
+                      price={item.price}
+                      discount_pct={item.discount_pct}
                       size="sm"
                       style={{
                         width: '38px',

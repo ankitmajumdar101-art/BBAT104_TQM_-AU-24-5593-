@@ -1031,6 +1031,9 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                         src={dish.image_url}
                         alt={dish.name}
                         category={dish.category_name}
+                        price={dish.final_price || dish.price}
+                        discount_pct={dish.discount_pct}
+                        description={dish.description}
                         size="menu-card"
                         style={{ height: '100%', borderRadius: '15px 15px 0 0' }}
                       />
@@ -1308,6 +1311,9 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                         src={item.image_url}
                         alt={item.name}
                         category={item.category_name}
+                        price={item.price}
+                        discount_pct={item.discount_pct}
+                        description={item.description}
                         size="sm"
                         style={{
                           width: '36px',
@@ -1663,6 +1669,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                             <DishImage
                               src={i.image_url}
                               alt={i.item_name}
+                              price={i.price}
                               size="sm"
                               style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', borderRadius: '6px' }}
                             />

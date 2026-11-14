@@ -548,6 +548,7 @@ export default function OwnerBillHistory() {
                               <DishImage
                                 src={item.image_url}
                                 alt={item.item_name}
+                                price={item.price}
                                 size="sm"
                                 style={{ width: '28px', height: '28px', minWidth: '28px', minHeight: '28px', borderRadius: '6px' }}
                               />

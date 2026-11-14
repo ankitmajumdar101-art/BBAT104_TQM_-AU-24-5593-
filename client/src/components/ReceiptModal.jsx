@@ -124,6 +124,7 @@ export default function ReceiptModal({ order, onClose }) {
                         <DishImage
                           src={it.image_url}
                           alt={it.item_name}
+                          price={it.price}
                           size="sm"
                           style={{ width: '22px', height: '22px', minWidth: '22px', minHeight: '22px', borderRadius: '4px' }}
                         />
