@@ -10,7 +10,7 @@ import {
   User as UserIcon 
 } from 'lucide-react';
 
-export default function Navbar({ user, activeTab, setActiveTab, onLogout, appTitle, themePreference }) {
+export default function Navbar({ user, activeTab, setActiveTab, onLogout, appTitle, restaurantName, themePreference }) {
   const isOwner = user?.role === 'Owner';
   const isAdmin = user?.role === 'Admin';
   const isCashier = user?.role === 'Cashier';
@@ -92,7 +92,7 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout, appTit
           </div>
           <div>
             <h1 style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '-0.3px', margin: 0, color: '#FFF' }}>
-              {appTitle || 'Royal Feast'}
+              {restaurantName || appTitle || 'Royal Feast'}
             </h1>
             <p style={{ fontSize: '11px', color: '#FCD34D', margin: 0, fontWeight: '700', letterSpacing: '0.4px' }}>
               {portalTitle}

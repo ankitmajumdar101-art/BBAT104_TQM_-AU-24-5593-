@@ -16,6 +16,9 @@ export default function App() {
   const [appTitle, setAppTitle] = useState(() => {
     return localStorage.getItem('application_title') || 'Royal Feast Restaurant Billing & POS';
   });
+  const [restaurantName, setRestaurantName] = useState(() => {
+    return localStorage.getItem('restaurant_name') || 'Royal Feast Restaurant';
+  });
   const [themePreference, setThemePreference] = useState(() => {
     const saved = localStorage.getItem('theme_preference') || 'light';
     document.documentElement.setAttribute('data-theme', saved);
@@ -31,11 +34,15 @@ export default function App() {
         const res = await fetch('/api/system/preferences');
         const data = await res.json();
         if (data.success && data.preferences) {
-          const { application_title, theme_preference: prefTheme } = data.preferences;
+          const { application_title, theme_preference: prefTheme, restaurant_name: restName } = data.preferences;
           if (application_title) {
             setAppTitle(application_title);
             document.title = application_title;
             localStorage.setItem('application_title', application_title);
+          }
+          if (restName) {
+            setRestaurantName(restName);
+            localStorage.setItem('restaurant_name', restName);
           }
           if (prefTheme) {
             setThemePreference(prefTheme);
@@ -52,14 +59,18 @@ export default function App() {
 
     fetchSystemPrefs();
 
-    // Listen to custom event when settings are updated in Admin panel
+    // Listen to custom event when settings are updated in Admin or Owner panels
     const handleSettingsChanged = (e) => {
       if (!e.detail) return;
-      const { application_title, theme_preference: prefTheme } = e.detail;
+      const { application_title, theme_preference: prefTheme, restaurant_name: restName } = e.detail;
       if (application_title) {
         setAppTitle(application_title);
         document.title = application_title;
         localStorage.setItem('application_title', application_title);
+      }
+      if (restName) {
+        setRestaurantName(restName);
+        localStorage.setItem('restaurant_name', restName);
       }
       if (prefTheme) {
         setThemePreference(prefTheme);
@@ -70,9 +81,19 @@ export default function App() {
       }
     };
 
+    const handleProfileChanged = (e) => {
+      if (!e.detail) return;
+      if (e.detail.restaurant_name) {
+        setRestaurantName(e.detail.restaurant_name);
+        localStorage.setItem('restaurant_name', e.detail.restaurant_name);
+      }
+    };
+
     window.addEventListener('app-settings-changed', handleSettingsChanged);
+    window.addEventListener('restaurant-profile-changed', handleProfileChanged);
     return () => {
       window.removeEventListener('app-settings-changed', handleSettingsChanged);
+      window.removeEventListener('restaurant-profile-changed', handleProfileChanged);
     };
   }, []);
 
@@ -162,6 +183,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
         appTitle={appTitle}
+        restaurantName={restaurantName}
         themePreference={themePreference}
       />
 

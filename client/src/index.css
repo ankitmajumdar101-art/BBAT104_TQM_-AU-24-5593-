@@ -427,7 +427,27 @@ body.dark-theme {
   box-shadow: 0 0 25px rgba(16, 185, 129, 0.35) !important;
 }
 
-/* 14. Modal Dialog Cards (Excluding Thermal Receipt) */
+/* 14. Business Profile & Settings Cards in Dark Mode */
+[data-theme="dark"] .business-profile-card {
+  background: linear-gradient(180deg, #131C2E 0%, #0E1524 100%) !important;
+  color: #F8FAFC !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .owner-notice-card {
+  background: rgba(245, 158, 11, 0.08) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+  color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] .receipt-live-preview {
+  background: #090E17 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #E2E8F0 !important;
+}
+
+/* 15. Modal Dialog Cards (Excluding Thermal Receipt) */
 [data-theme="dark"] .receipt-modal-card:not(#printable-receipt),
 [data-theme="dark"] div[style*="zIndex: 9999"]:not(#printable-receipt) {
   background: linear-gradient(180deg, #151E33 0%, #0F1626 100%) !important;

@@ -111,7 +111,7 @@ export default function OwnerSalesReports() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h1 style={{ fontSize: '22px', fontWeight: '900', color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '0.5px' }}>
-              ROYAL FEAST RESTAURANT
+              {localStorage.getItem('restaurant_name') || 'ROYAL FEAST RESTAURANT'}
             </h1>
             <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#334155', margin: '0 0 6px 0' }}>
               OFFICIAL SALES AUDIT REPORT

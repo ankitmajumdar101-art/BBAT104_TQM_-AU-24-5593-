@@ -656,11 +656,12 @@ router.put('/settings', async (req, res, next) => {
     const updates = req.body;
     for (const key of allowedKeys) {
       if (updates[key] !== undefined) {
+        const val = updates[key] !== null ? String(updates[key]).trim() : '';
         await db.query(`
           INSERT INTO restaurant_settings (setting_key, setting_value)
           VALUES (?, ?)
           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
-        `, [key, String(updates[key]).trim()]);
+        `, [key, val]);
       }
     }
 
@@ -669,10 +670,10 @@ router.put('/settings', async (req, res, next) => {
       username: req.user.username,
       role: req.user.role,
       action: 'UPDATE_BUSINESS_SETTINGS',
-      details: 'Updated restaurant business profile settings'
+      details: `Updated restaurant business profile settings (${updates.restaurant_name || 'Business Info'})`
     });
 
-    res.json({ success: true, message: 'Business settings updated successfully.' });
+    res.json({ success: true, message: 'Business settings updated successfully.', settings: updates });
   } catch (error) {
     next(error);
   }
