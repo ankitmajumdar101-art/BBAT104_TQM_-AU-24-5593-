@@ -187,6 +187,15 @@ router.post('/tables/seat', async (req, res, next) => {
       });
     }
 
+    const maxChairs = table.capacity || 4;
+    const count = parseInt(guests_count, 10) || 1;
+    if (count < 1 || count > maxChairs) {
+      return res.status(400).json({
+        success: false,
+        message: `Table #${table_number} has only ${maxChairs} chairs. Maximum ${maxChairs} guests can be seated.`
+      });
+    }
+
     const guestName = (customer_name && customer_name.trim()) ? customer_name.trim() : 'Guest';
     const waiterName = req.user.full_name || req.user.username;
 
@@ -204,7 +213,7 @@ router.post('/tables/seat', async (req, res, next) => {
     `, [
       guestName,
       (customer_phone || '').trim(),
-      parseInt(guests_count, 10) || 1,
+      count,
       req.user.id,
       waiterName,
       parseInt(table_number, 10)
@@ -615,7 +624,7 @@ router.get('/orders', async (req, res, next) => {
   }
 });
 
-// PATCH /api/waiter/orders/:id/serve - Waiter marks food served to table
+// PATCH /api/waiter/orders/:id/serve - Waiter marks food served to table (Manual Tick Toggle)
 router.patch('/orders/:id/serve', async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id, 10);
@@ -626,41 +635,47 @@ router.patch('/orders/:id/serve', async (req, res, next) => {
     }
 
     const order = orders[0];
+    const newServed = (req.body && req.body.served !== undefined)
+      ? (req.body.served ? 1 : 0)
+      : (order.food_served_to_table ? 0 : 1);
 
-    // Mark food served
+    // Mark food served status
     await db.query(`
       UPDATE orders
-      SET food_served_to_table = 1,
-          kitchen_status = 'Completed',
-          table_status = 'Served'
+      SET food_served_to_table = ?,
+          kitchen_status = ?,
+          table_status = ?
       WHERE id = ?
-    `, [orderId]);
+    `, [newServed, newServed ? 'Completed' : 'Ready', newServed ? 'Served' : 'Food Ready', orderId]);
 
-    // Update table status to Served
+    // Update table status
     await db.query(`
       UPDATE restaurant_tables
-      SET status = 'Served'
+      SET status = ?
       WHERE table_number = ?
-    `, [order.table_number]);
+    `, [newServed ? 'Served' : 'Food Ready', order.table_number]);
 
     await logAudit({
       userId: req.user.id,
       username: req.user.username,
       role: req.user.role,
-      action: 'WAITER_SERVE_FOOD',
-      details: `Waiter ${req.user.username} delivered and served dishes for Table #${order.table_number} (Order #${order.bill_number})`
+      action: newServed ? 'WAITER_SERVE_FOOD' : 'WAITER_UNSERVE_FOOD',
+      details: `Waiter ${req.user.username} ${newServed ? 'marked' : 'unmarked'} food served for Table #${order.table_number} (Order #${order.bill_number})`
     });
 
     res.json({
       success: true,
-      message: `Food marked as served to Table #${order.table_number}! Customer is dining.`
+      food_served_to_table: newServed,
+      message: newServed
+        ? `Food marked as served to Table #${order.table_number}! Customer is dining.`
+        : `Food service status unmarked for Table #${order.table_number}.`
     });
   } catch (error) {
     next(error);
   }
 });
 
-// PATCH /api/waiter/orders/:id/bill-delivered - Waiter marks that customer received the bill
+// PATCH /api/waiter/orders/:id/bill-delivered - Waiter marks that customer received the bill (Manual Tick Toggle)
 router.patch('/orders/:id/bill-delivered', async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id, 10);
@@ -671,24 +686,30 @@ router.patch('/orders/:id/bill-delivered', async (req, res, next) => {
     }
 
     const order = orders[0];
+    const newDelivered = (req.body && req.body.delivered !== undefined)
+      ? (req.body.delivered ? 1 : 0)
+      : (order.bill_delivered_to_customer ? 0 : 1);
 
     await db.query(`
       UPDATE orders
-      SET bill_delivered_to_customer = 1
+      SET bill_delivered_to_customer = ?
       WHERE id = ?
-    `, [orderId]);
+    `, [newDelivered, orderId]);
 
     await logAudit({
       userId: req.user.id,
       username: req.user.username,
       role: req.user.role,
-      action: 'WAITER_DELIVER_BILL',
-      details: `Waiter ${req.user.username} delivered printed bill #${order.bill_number} to customer at Table #${order.table_number}`
+      action: newDelivered ? 'WAITER_DELIVER_BILL' : 'WAITER_UNDELIVER_BILL',
+      details: `Waiter ${req.user.username} ${newDelivered ? 'marked' : 'unmarked'} bill delivered for Table #${order.table_number} (Bill #${order.bill_number})`
     });
 
     res.json({
       success: true,
-      message: `Bill receipt delivered to Table #${order.table_number}.`
+      bill_delivered_to_customer: newDelivered,
+      message: newDelivered
+        ? `Bill receipt marked as delivered to Table #${order.table_number}.`
+        : `Bill delivery status unmarked for Table #${order.table_number}.`
     });
   } catch (error) {
     next(error);

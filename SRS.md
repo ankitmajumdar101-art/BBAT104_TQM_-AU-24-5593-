@@ -203,7 +203,7 @@ All business rules, table state updates, discount limits, GST tax percentages (2
   * 🟠 **Food Preparing:** Kitchen Chef is actively preparing food.
   * 🟢 **Food Ready:** Kitchen Chef has completed cooking; blinking ready alert.
   * ✅ **Served / Dining:** Dishes delivered to table; guests dining.
-* **SRS-WTR-02:** The Waiter shall be able to assign/seat guests at an available table by recording customer name, phone number, and guest count.
+* **SRS-WTR-02: Table Seating & Strict Capacity Capping (Max 4 Guests per Standard Table):** The Waiter shall be able to assign/seat guests at an available table by recording customer name, phone number, and guest count. The guest count shall be strictly capped to the table's physical chair capacity ($N \le 4$ chairs for standard 4-chair tables, fulfilling all 4 chairs without over-seating). Both client-side inputs (numeric limits and quick 1-to-4 chair selection pills) and backend API validation (`POST /api/waiter/tables/seat`) shall reject any guest count exceeding table capacity with `HTTP 400 Bad Request`.
 * **SRS-WTR-03:** The Waiter shall be able to clear/free a table once dining is concluded, resetting the table to `Available`.
 
 #### B. Customer Menu Cards with Real-Time Prices & Discounts
@@ -224,10 +224,15 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 * **SRS-WTR-08:** Submitting the order sets `order_status = 'Pending_Cashier'` and `kitchen_status = 'Pending_Bill'`, transmitting the ticket with room name and chair labels to the Cashier queue without exposing kitchen preparation until billed.
 
 #### D. Bill Receipt Delivery & Food Service
-* **SRS-WTR-09:** When the Cashier calculates the bill, the Waiter dashboard shall display a "Bill Ready" notification allowing the waiter to inspect and print the 80mm thermal receipt for the customer.
+* **SRS-WTR-09: Cashier Bill Ready Notification & Manual Tick Option for Bill Delivery:** When the Cashier calculates the bill, the Waiter dashboard shall display a "Bill Ready" notification allowing the waiter to inspect and print the 80mm thermal receipt for the customer. In the "Order Status & Bills" section, each order card shall provide an interactive **Waiter Service Checklist** with a dedicated manual tick checkbox:
+  * **Bill Service Status Manual Tick (`[✓] Bill Delivered to Customer`):** The waiter manually ticks this option when they have received the bill from the cashier and served/handed the printed bill receipt to the customer at their table. Ticking triggers an instant server update (`PATCH /api/waiter/orders/:id/bill-delivered`) recording `bill_delivered_to_customer = 1`.
 * **SRS-WTR-10:** When the Kitchen Chef marks food `Ready`, the Waiter dashboard shall display a high-priority "Food Ready" alert banner.
-* **SRS-WTR-11:** The Waiter shall deliver dishes to the table and mark the order as `Served`, updating the table status to `Served`.
-* **SRS-WTR-12:** **Active Orders Progression Tracker with Visual Dish Badges & Chair Labels:** The Waiter live orders tracker shall display visual dish badges with dish thumbnails, quantities, table numbers with Room/Floor context, and assigned chair labels for every active order, keeping the floor staff visually connected with the exact dishes and chairs to serve.
+* **SRS-WTR-11: Food Ready Delivery & Manual Tick Option for Food Service:** When food is prepared by the kitchen chef, the waiter physically serves the dishes to the customer at their specific table and chairs. In the "Order Status & Bills" section, each order card shall provide an interactive manual tick checkbox:
+  * **Food Service Status Manual Tick (`[✓] Food Served to Customer`):** The waiter manually ticks this option when hot dishes are delivered to the customer at their chairs. Ticking triggers an instant server update (`PATCH /api/waiter/orders/:id/serve`) transitioning `food_served_to_table = 1`, `kitchen_status = 'Served'`, and updating the dining table status to `Served`.
+* **SRS-WTR-12: Full Table & Chair Number Visibility across Orders, Trackers, and Receipts:** The system shall prominently display the Table Number, Room Name, and Chair Numbers across all waiter and customer artifacts so floor staff and customers know exactly where each customer is seated:
+  * **Order Tray (`WaiterDashboard.jsx`):** Displays `Table #{table_num}` and `🪑 {chair_label}` beside each dish item and order banner.
+  * **Order Status & Bills Card Header:** Displays `TABLE #{table_num}`, `🏢 {room_name}`, and `🪑 Seated Chairs: {chairs}` prominently on every active order card.
+  * **Itemized Customer Bill & Thermal Receipt (`ReceiptModal.jsx`):** Displays `Table: #{table_num} ({room_name})` and `Seated Seats: 🪑 {distinctChairs}` in bill metadata header, as well as `Table #{table_num} • 🪑 {chair_label}` beneath each line item on the printed 80mm thermal receipt.
 
 ---
 
@@ -359,10 +364,10 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 | **SRS-ADM-04 to 07** | `api/routes/backup.js`, `AuditLogs.jsx`, `ErrorLogs.jsx` | Disaster recovery & audit/error inspection tests |
 | **SRS-CSH-01 to 03** | `client/src/components/POSBilling.jsx`, `ReceiptModal.jsx` & `DishImage.jsx` | POS menu card selection, order cart with dish thumbnails & printable receipt tests |
 | **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` & `DishImage.jsx` | Waiter queue billing calculation test with dish thumbnails and chair breakdown finalizing into billed tickets |
-| **SRS-WTR-01 to 03** | `client/src/components/waiter/WaiterDashboard.jsx` & `api/routes/waiter.js` | Dining Room/Floor selector, 10 tables per room with 4-chair seating matrix, customer seating & clear actions |
+| **SRS-WTR-01 to 03** | `client/src/components/waiter/WaiterDashboard.jsx` & `api/routes/waiter.js` | Dining Room/Floor selector, 10 tables per room with 4-chair seating matrix, strict 4-guest capacity capping, customer seating & clear actions |
 | **SRS-WTR-04 to 06** | `api/routes/waiter.js`, `WaiterDashboard.jsx` & `DishImage.jsx` | Visual menu cards with 100% authentic dish photos, prices, discount badges & WhatsApp-style full-screen zoom lightbox |
 | **SRS-WTR-07 to 08** | `api/routes/waiter.js` & `WaiterDashboard.jsx` | 4-step progressive stepper (`Room/Floor -> Table -> Chair -> Take Order`), chair-by-chair dish allocation tray, and `Pending_Cashier` dispatch |
-| **SRS-WTR-09 to 12** | `WaiterDashboard.jsx` & `ReceiptModal.jsx` | Thermal bill print, food ready serving verification & active order visual dish badges with chair labels |
+| **SRS-WTR-09 to 12** | `WaiterDashboard.jsx`, `ReceiptModal.jsx` & `api/routes/waiter.js` | Manual tick checklist for bill delivery & food service, thermal receipt print, food ready alerts, and table/chair labels on all cards & receipts |
 | **SRS-KIT-01 to 06** | `client/src/components/kitchen/KitchenOrderQueue.jsx` & `DishImage.jsx` | High-speed KDS ticket test with visual dish thumbnails, chair allocation labels & state transitions (`New` → `Prep` → `Ready`) |
 
 ---

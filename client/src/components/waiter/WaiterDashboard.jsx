@@ -154,13 +154,14 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle Seating Customer
+  // Handle Seating Customer (Capped strictly to 4 chairs / table capacity)
   const handleOpenSeatModal = (tbl) => {
     setSelectedTableForSeat(tbl);
+    const maxCapacity = tbl.capacity || 4;
     setSeatForm({
       customer_name: '',
       customer_phone: '',
-      guests_count: tbl.capacity || 2
+      guests_count: Math.min(maxCapacity, 4) // Defaults to all 4 chairs occupied
     });
     setShowSeatModal(true);
   };
@@ -168,6 +169,16 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
   const handleConfirmSeat = async (e) => {
     e.preventDefault();
     if (!selectedTableForSeat) return;
+
+    const maxChairs = selectedTableForSeat.capacity || 4;
+    const count = parseInt(seatForm.guests_count, 10) || 1;
+    if (count < 1 || count > maxChairs) {
+      setFeedback({
+        type: 'error',
+        message: `Table #${selectedTableForSeat.table_number} has only ${maxChairs} chairs. Maximum ${maxChairs} guests can be seated.`
+      });
+      return;
+    }
 
     setLoading(true);
     setFeedback({ type: '', message: '' });
@@ -184,7 +195,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
           table_number: selectedTableForSeat.table_number,
           customer_name: seatForm.customer_name,
           customer_phone: seatForm.customer_phone,
-          guests_count: seatForm.guests_count
+          guests_count: count
         })
       });
 
@@ -350,36 +361,50 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
     }
   };
 
-  // Mark Food Served
-  const handleMarkServed = async (orderId, tableNum) => {
+  // Mark / Toggle Food Served (Manual Tick Option)
+  const handleMarkServed = async (orderId, tableNum, desiredState) => {
     try {
       const token = localStorage.getItem('token');
+      const body = desiredState !== undefined ? JSON.stringify({ served: desiredState }) : JSON.stringify({});
       const res = await fetch(`/api/waiter/orders/${orderId}/serve`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body
       });
       const data = await res.json();
       if (data.success) {
         setFeedback({ type: 'success', message: data.message });
         refreshAll();
+      } else {
+        setFeedback({ type: 'error', message: data.message || 'Failed to update food service status.' });
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Mark Bill Delivered to Customer
-  const handleMarkBillDelivered = async (orderId) => {
+  // Mark / Toggle Bill Delivered to Customer (Manual Tick Option)
+  const handleMarkBillDelivered = async (orderId, desiredState) => {
     try {
       const token = localStorage.getItem('token');
+      const body = desiredState !== undefined ? JSON.stringify({ delivered: desiredState }) : JSON.stringify({});
       const res = await fetch(`/api/waiter/orders/${orderId}/bill-delivered`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body
       });
       const data = await res.json();
       if (data.success) {
         setFeedback({ type: 'success', message: data.message });
         refreshAll();
+      } else {
+        setFeedback({ type: 'error', message: data.message || 'Failed to update bill delivery status.' });
       }
     } catch (err) {
       console.error(err);
@@ -1717,6 +1742,9 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                           <div style={{ fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {item.name}
                           </div>
+                          <div style={{ fontSize: '10px', color: '#7E22CE', fontWeight: '800' }}>
+                            Table #{selectedTableNum} • {item.chair_label}
+                          </div>
                           <div style={{ fontSize: '11px', color: '#64748B' }}>
                             ₹{item.discounted_price.toFixed(2)} each
                             {item.discount_percent > 0 && (
@@ -1744,7 +1772,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                           fontSize: '10px',
                           fontWeight: '800'
                         }}>
-                          🪑 {item.chair_label}
+                          Table #{selectedTableNum} • 🪑 {item.chair_label}
                         </span>
 
                         <select
@@ -1940,6 +1968,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                 const isCooking = ord.kitchen_status === 'Preparing';
                 const isFoodReady = ord.kitchen_status === 'Ready' && !ord.food_served_to_table;
                 const isServed = Boolean(ord.food_served_to_table);
+                const orderChairs = [...new Set((ord.items || []).map(i => i.chair_number === 0 ? 'Shared' : `Chair ${i.chair_number}`))].filter(Boolean).join(', ');
 
                 return (
                   <div
@@ -1947,7 +1976,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                     style={{
                       background: '#FFF',
                       borderRadius: '16px',
-                      border: isFoodReady ? '2px solid #10B981' : '1px solid #E2E8F0',
+                      border: isFoodReady ? '2px solid #10B981' : isServed ? '2px solid #86EFAC' : '1px solid #E2E8F0',
                       padding: '20px',
                       boxShadow: isFoodReady ? '0 4px 18px rgba(16, 185, 129, 0.2)' : '0 2px 8px rgba(0,0,0,0.03)',
                       display: 'flex',
@@ -1955,7 +1984,7 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                       gap: '16px'
                     }}
                   >
-                    {/* Header Row */}
+                    {/* Header Row with Table, Room & Customer Chair Locations */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                         <span style={{
@@ -1980,6 +2009,20 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                             🏢 {ord.room_name}
                           </span>
                         )}
+                        <span style={{
+                          background: '#F3E8FF',
+                          color: '#6B21A8',
+                          padding: '3px 10px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          <Armchair size={13} />
+                          <span>Seated: {orderChairs || '4 Chairs'}</span>
+                        </span>
                         <div>
                           <div style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A' }}>
                             {ord.customer_name || 'Dine-in Guest'}
@@ -2108,10 +2151,10 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                       </div>
                     </div>
 
-                    {/* Items Breakdown with Visual Dish Badges */}
+                    {/* Items Breakdown with Table & Chair Identifiers */}
                     <div>
                       <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748B', display: 'block', marginBottom: '6px', letterSpacing: '0.4px' }}>
-                        DISHES IN ORDER ({ord.items?.length || 0}):
+                        DISHES ORDERED FOR TABLE #{ord.table_number} ({ord.items?.length || 0} ITEMS):
                       </span>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                         {ord.items?.map((i, itmIdx) => (
@@ -2120,11 +2163,11 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '6px',
+                              gap: '8px',
                               background: '#F8FAFC',
                               border: '1px solid #E2E8F0',
                               borderRadius: '8px',
-                              padding: '4px 8px 4px 5px',
+                              padding: '4px 10px 4px 6px',
                               boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                             }}
                           >
@@ -2133,92 +2176,233 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
                               alt={i.item_name}
                               price={i.price}
                               size="sm"
-                              style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', borderRadius: '6px' }}
+                              style={{ width: '28px', height: '28px', minWidth: '28px', minHeight: '28px', borderRadius: '6px' }}
                             />
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A' }}>
                                 {i.quantity}× {i.item_name}
                               </span>
-                              {i.chair_label && (
-                                <span style={{
-                                  background: i.chair_number === 0 ? '#EFF6FF' : '#F3E8FF',
-                                  color: i.chair_number === 0 ? '#1D4ED8' : '#7E22CE',
-                                  padding: '1px 5px',
-                                  borderRadius: '4px',
-                                  fontSize: '10px',
-                                  fontWeight: '800'
-                                }}>
-                                  🪑 {i.chair_label}
-                                </span>
-                              )}
+                              <span style={{
+                                background: i.chair_number === 0 ? '#EFF6FF' : '#F3E8FF',
+                                color: i.chair_number === 0 ? '#1D4ED8' : '#7E22CE',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                fontSize: '10px',
+                                fontWeight: '800',
+                                border: i.chair_number === 0 ? '1px solid #BFDBFE' : '1px solid #D8B4FE'
+                              }}>
+                                Table #{ord.table_number} • 🪑 {i.chair_label || (i.chair_number === 0 ? 'Shared' : `Chair ${i.chair_number}`)}
+                              </span>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Operational Action Controls */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                      {isBilled && (
-                        <button
-                          type="button"
-                          onClick={() => handleViewReceipt(ord.id)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '8px 14px',
-                            borderRadius: '8px',
-                            background: '#F3E8FF',
-                            color: '#7E22CE',
-                            border: '1px solid #D8B4FE',
-                            fontSize: '12px',
-                            fontWeight: '800',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <Printer size={14} />
-                          <span>View & Print Customer Bill</span>
-                        </button>
-                      )}
-
-                      {isFoodReady && (
-                        <button
-                          type="button"
-                          onClick={() => handleMarkServed(ord.id, ord.table_number)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            background: '#059669',
-                            color: '#FFF',
-                            border: 'none',
-                            fontSize: '13px',
-                            fontWeight: '900',
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
-                          }}
-                        >
-                          <CheckCircle2 size={16} />
-                          <span>Food Picked Up & Served!</span>
-                        </button>
-                      )}
-
-                      {isServed && (
-                        <span style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          color: '#059669',
-                          fontWeight: '800',
-                          fontSize: '13px'
-                        }}>
-                          <Check size={16} />
-                          <span>Dishes Served Successfully</span>
+                    {/* ======================================================== */}
+                    {/* WAITER MANUAL TICK STATUS: BILL & FOOD SERVICE CHECKLIST */}
+                    {/* ======================================================== */}
+                    <div style={{
+                      background: '#F8FAFC',
+                      border: '1.5px solid #E2E8F0',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ background: '#7E22CE', color: '#FFF', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '900' }}>
+                            MANUAL SERVICE TICK
+                          </span>
+                          <span style={{ fontSize: '13px', fontWeight: '900', color: '#0F172A' }}>
+                            Waiter Service Checklist (Table #{ord.table_number} • Chairs: {orderChairs || 'All 4 Chairs'})
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>
+                          Tick the boxes manually when bill and food are served to guests
                         </span>
-                      )}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                        {/* 1. Bill Service Manual Tick Card */}
+                        <div style={{
+                          background: ord.bill_delivered_to_customer ? '#F0FDF4' : isBilled ? '#FAF5FF' : '#FFF',
+                          border: ord.bill_delivered_to_customer ? '2px solid #16A34A' : isBilled ? '2px solid #D8B4FE' : '1px solid #E2E8F0',
+                          borderRadius: '10px',
+                          padding: '12px 14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: '10px',
+                          boxShadow: (isBilled && !ord.bill_delivered_to_customer) ? '0 2px 10px rgba(126, 34, 206, 0.15)' : 'none',
+                          transition: 'all 0.2s ease'
+                        }}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Receipt size={15} color="#7E22CE" />
+                                <span>1. BILL SERVICE STATUS</span>
+                              </span>
+                              <span style={{
+                                background: ord.bill_delivered_to_customer ? '#DCFCE7' : isBilled ? '#F3E8FF' : '#F1F5F9',
+                                color: ord.bill_delivered_to_customer ? '#15803D' : isBilled ? '#7E22CE' : '#64748B',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontSize: '10px',
+                                fontWeight: '900'
+                              }}>
+                                {ord.bill_delivered_to_customer ? '✓ BILL DELIVERED' : isBilled ? 'BILL READY' : 'WAITING CASHIER'}
+                              </span>
+                            </div>
+
+                            <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
+                              <strong>Location:</strong> Table #{ord.table_number} ({ord.room_name || 'Ground Floor'})
+                              <br />
+                              <strong>Customer:</strong> {ord.customer_name || 'Guest'} • <strong>Total:</strong> ₹{parseFloat(ord.total).toFixed(2)}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {/* Interactive Manual Tick Checkbox */}
+                            <label style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              background: ord.bill_delivered_to_customer ? '#DCFCE7' : isBilled ? '#FFF' : '#F8FAFC',
+                              border: ord.bill_delivered_to_customer ? '1.5px solid #86EFAC' : isBilled ? '1.5px solid #7E22CE' : '1px solid #CBD5E1',
+                              cursor: isBilled ? 'pointer' : 'not-allowed',
+                              userSelect: 'none'
+                            }}>
+                              <input
+                                type="checkbox"
+                                disabled={!isBilled}
+                                checked={Boolean(ord.bill_delivered_to_customer)}
+                                onChange={() => handleMarkBillDelivered(ord.id)}
+                                style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  cursor: isBilled ? 'pointer' : 'not-allowed',
+                                  accentColor: '#16A34A'
+                                }}
+                              />
+                              <span style={{
+                                fontSize: '12px',
+                                fontWeight: '800',
+                                color: ord.bill_delivered_to_customer ? '#15803D' : isBilled ? '#6B21A8' : '#94A3B8'
+                              }}>
+                                {ord.bill_delivered_to_customer
+                                  ? '✓ Tick Confirmed: Bill Handed to Customer'
+                                  : isBilled
+                                    ? 'Tick Option: Confirm Bill Delivered to Customer'
+                                    : 'Waiting for Cashier to Calculate Bill...'}
+                              </span>
+                            </label>
+
+                            {isBilled && (
+                              <button
+                                type="button"
+                                onClick={() => handleViewReceipt(ord.id)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                  padding: '7px 12px',
+                                  borderRadius: '6px',
+                                  background: '#FFF',
+                                  color: '#7E22CE',
+                                  border: '1px solid #D8B4FE',
+                                  fontSize: '11px',
+                                  fontWeight: '800',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <Printer size={13} />
+                                <span>View & Print Bill (Table #{ord.table_number})</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 2. Food Service Manual Tick Card */}
+                        <div style={{
+                          background: isServed ? '#F0FDF4' : isFoodReady ? '#ECFDF5' : '#FFF',
+                          border: isServed ? '2px solid #16A34A' : isFoodReady ? '2px solid #10B981' : '1px solid #E2E8F0',
+                          borderRadius: '10px',
+                          padding: '12px 14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: '10px',
+                          boxShadow: isFoodReady ? '0 4px 16px rgba(16, 185, 129, 0.2)' : 'none',
+                          transition: 'all 0.2s ease'
+                        }}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <ChefHat size={15} color="#059669" />
+                                <span>2. FOOD SERVICE STATUS</span>
+                              </span>
+                              <span style={{
+                                background: isServed ? '#DCFCE7' : isFoodReady ? '#D1FAE5' : isCooking ? '#FEF3C7' : '#F1F5F9',
+                                color: isServed ? '#15803D' : isFoodReady ? '#065F46' : isCooking ? '#B45309' : '#64748B',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontSize: '10px',
+                                fontWeight: '900'
+                              }}>
+                                {isServed ? '✓ FOOD SERVED' : isFoodReady ? '🔔 READY FOR PICKUP' : isCooking ? 'CHEF COOKING' : 'QUEUED'}
+                              </span>
+                            </div>
+
+                            <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
+                              <strong>Destination:</strong> Table #{ord.table_number} • 🪑 <strong>{orderChairs || 'All Chairs'}</strong>
+                              <br />
+                              <strong>Dishes to Serve:</strong> {ord.items?.length || 0} items prepared by Chef
+                            </div>
+                          </div>
+
+                          {/* Interactive Manual Tick Checkbox */}
+                          <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            background: isServed ? '#DCFCE7' : isFoodReady ? '#D1FAE5' : '#F8FAFC',
+                            border: isServed ? '1.5px solid #86EFAC' : isFoodReady ? '2px solid #10B981' : '1px solid #CBD5E1',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(isServed)}
+                              onChange={() => handleMarkServed(ord.id, ord.table_number)}
+                              style={{
+                                width: '18px',
+                                height: '18px',
+                                cursor: 'pointer',
+                                accentColor: '#16A34A'
+                              }}
+                            />
+                            <span style={{
+                              fontSize: '12px',
+                              fontWeight: '800',
+                              color: isServed ? '#15803D' : isFoodReady ? '#065F46' : '#64748B'
+                            }}>
+                              {isServed
+                                ? `✓ Tick Confirmed: Food Served to Table #${ord.table_number} (${orderChairs})`
+                                : isFoodReady
+                                  ? `🔔 Click to Tick: Food is READY! Confirm Served to Table #${ord.table_number}`
+                                  : `Tick Option: Mark Food Served to Table #${ord.table_number}`}
+                            </span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -2303,17 +2487,72 @@ export default function WaiterDashboard({ currentUser, onLogout }) {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>
-                  NUMBER OF GUESTS (SEATS)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={seatForm.guests_count}
-                  onChange={(e) => setSeatForm({ ...seatForm, guests_count: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '800', color: '#475569' }}>
+                    NUMBER OF GUESTS (CHAIRS TO OCCUPY) *
+                  </label>
+                  <span style={{ fontSize: '11px', color: '#7E22CE', fontWeight: '800', background: '#F3E8FF', padding: '1px 8px', borderRadius: '4px' }}>
+                    Max {selectedTableForSeat.capacity || 4} Chairs Available
+                  </span>
+                </div>
+
+                {/* Quick 1 to 4 Chair Pill Selector */}
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${selectedTableForSeat.capacity || 4}, 1fr)`, gap: '6px', marginBottom: '8px' }}>
+                  {Array.from({ length: selectedTableForSeat.capacity || 4 }, (_, idx) => {
+                    const num = idx + 1;
+                    const isSelected = seatForm.guests_count === num;
+                    return (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setSeatForm({ ...seatForm, guests_count: num })}
+                        style={{
+                          padding: '8px 4px',
+                          borderRadius: '8px',
+                          border: isSelected ? '2px solid #7E22CE' : '1px solid #CBD5E1',
+                          background: isSelected ? 'linear-gradient(135deg, #F3E8FF 0%, #EDE9FE 100%)' : '#FFF',
+                          color: isSelected ? '#6B21A8' : '#334155',
+                          fontSize: '12px',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '2px',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <Armchair size={14} color={isSelected ? '#7E22CE' : '#64748B'} />
+                        <span>{num} {num === 1 ? 'Guest' : 'Guests'}</span>
+                        <span style={{ fontSize: '9px', opacity: 0.8 }}>
+                          {num === (selectedTableForSeat.capacity || 4) ? '(Full 4 Chairs)' : `${num} Chair${num > 1 ? 's' : ''}`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="number"
+                    min="1"
+                    max={selectedTableForSeat.capacity || 4}
+                    value={seatForm.guests_count}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      const maxAllowed = selectedTableForSeat.capacity || 4;
+                      const clamped = Math.max(1, Math.min(maxAllowed, isNaN(val) ? 1 : val));
+                      setSeatForm({ ...seatForm, guests_count: clamped });
+                    }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', fontWeight: '800' }}
+                  />
+                  <span style={{ position: 'absolute', right: '12px', top: '10px', fontSize: '12px', color: '#64748B', fontWeight: '700' }}>
+                    / {selectedTableForSeat.capacity || 4} Chairs Max
+                  </span>
+                </div>
+                <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginTop: '4px' }}>
+                  🔒 Capped to {selectedTableForSeat.capacity || 4} guests: exactly 1 guest per chair for the 4 chairs at Table #{selectedTableForSeat.table_number}.
+                </span>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>

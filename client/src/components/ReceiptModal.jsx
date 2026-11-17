@@ -94,23 +94,31 @@ export default function ReceiptModal({ order, onClose }) {
             </div>
 
             {/* Bill Meta */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
-              <span><strong>Bill #:</strong> {order.bill_number}</span>
-              <span><strong>Table:</strong> #{order.table_number}{order.room_name ? ` (${order.room_name})` : ''}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
-              <span><strong>Date:</strong> {new Date(order.created_at || Date.now()).toLocaleString()}</span>
-              <span><strong>Cashier:</strong> {order.cashier_name || order.created_by_username || 'Staff'}</span>
-            </div>
-            <div style={{ fontSize: '11px', marginBottom: '12px', borderBottom: '1px dashed #CBD5E1', paddingBottom: '8px' }}>
-              <span><strong>Customer:</strong> {order.customer_name} {order.customer_phone ? `(${order.customer_phone})` : ''}</span>
-            </div>
+            {(() => {
+              const distinctChairs = [...new Set((order.items || []).map(i => i.chair_number === 0 ? 'Shared' : `Chair ${i.chair_number}`))].filter(Boolean).join(', ');
+              return (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
+                    <span><strong>Bill #:</strong> {order.bill_number}</span>
+                    <span><strong>Table:</strong> #{order.table_number}{order.room_name ? ` (${order.room_name})` : ''}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
+                    <span><strong>Date:</strong> {new Date(order.created_at || Date.now()).toLocaleString()}</span>
+                    <span><strong>Cashier:</strong> {order.cashier_name || order.created_by_username || 'Staff'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '12px', borderBottom: '1px dashed #CBD5E1', paddingBottom: '8px' }}>
+                    <span><strong>Customer:</strong> {order.customer_name} {order.customer_phone ? `(${order.customer_phone})` : ''}</span>
+                    <span><strong>Seated Seats:</strong> 🪑 {distinctChairs || 'Table Chairs'}</span>
+                  </div>
+                </>
+              );
+            })()}
 
             {/* Line Items Table */}
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '11px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
-                  <th style={{ padding: '4px 0' }}>Item</th>
+                  <th style={{ padding: '4px 0' }}>Item & Seat</th>
                   <th style={{ textAlign: 'center' }}>Qty</th>
                   <th style={{ textAlign: 'right' }}>Price</th>
                   <th style={{ textAlign: 'right' }}>Total</th>
@@ -128,14 +136,12 @@ export default function ReceiptModal({ order, onClose }) {
                           size="sm"
                           style={{ width: '22px', height: '22px', minWidth: '22px', minHeight: '22px', borderRadius: '4px' }}
                         />
-                        <span>
-                          {it.item_name}
-                          {it.chair_label ? (
-                            <span style={{ fontSize: '10px', color: '#64748B', marginLeft: '4px', fontWeight: 'bold' }}>
-                              [🪑 {it.chair_label}]
-                            </span>
-                          ) : null}
-                        </span>
+                        <div>
+                          <div style={{ fontWeight: '700' }}>{it.item_name}</div>
+                          <div style={{ fontSize: '10px', color: '#64748B' }}>
+                            Table #{order.table_number} • 🪑 {it.chair_label || (it.chair_number === 0 ? 'Shared' : `Chair ${it.chair_number}`)}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td style={{ textAlign: 'center' }}>{it.quantity}</td>
