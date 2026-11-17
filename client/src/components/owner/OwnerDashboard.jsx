@@ -18,7 +18,6 @@ import OwnerSalesReports from './OwnerSalesReports';
 import OwnerExpenses from './OwnerExpenses';
 import OwnerProfitLoss from './OwnerProfitLoss';
 import OwnerBillHistory from './OwnerBillHistory';
-import OwnerStaffPerformance from './OwnerStaffPerformance';
 import OwnerMenu from './OwnerMenu';
 import OwnerBillingSettings from './OwnerBillingSettings';
 import OwnerBusinessSettings from './OwnerBusinessSettings';
@@ -37,9 +36,8 @@ export default function OwnerDashboard({ onLogout, initialSubTab = 'overview' })
     { id: 'expenses', label: 'Expenses', icon: Wallet, desc: 'C. Overheads & Raw Costs' },
     { id: 'pnl', label: 'Profit & Loss', icon: DollarSign, desc: 'D. Estimated Operating P&L' },
     { id: 'bills', label: 'Bill History', icon: Receipt, desc: 'E. Read-Only Auditing' },
-    { id: 'staff', label: 'Staff Performance', icon: Users, desc: 'F. Cashier Throughput' },
-    { id: 'settings', label: 'Business Profile', icon: Settings, desc: 'G. Restaurant Info' },
-    { id: 'profile', label: 'Profile & Security', icon: UserCircle, desc: 'H. Password & Identity' },
+    { id: 'settings', label: 'Business Profile', icon: Settings, desc: 'F. Restaurant Info' },
+    { id: 'profile', label: 'Profile & Security', icon: UserCircle, desc: 'G. Password & Identity' },
   ];
 
   return (
@@ -99,7 +97,6 @@ export default function OwnerDashboard({ onLogout, initialSubTab = 'overview' })
         {activeSubTab === 'expenses' && <OwnerExpenses />}
         {activeSubTab === 'pnl' && <OwnerProfitLoss />}
         {activeSubTab === 'bills' && <OwnerBillHistory />}
-        {activeSubTab === 'staff' && <OwnerStaffPerformance />}
         {activeSubTab === 'settings' && <OwnerBusinessSettings />}
         {activeSubTab === 'profile' && <OwnerProfile onLogout={onLogout} />}
       </div>

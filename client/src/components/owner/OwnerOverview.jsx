@@ -282,24 +282,6 @@ export default function OwnerOverview({ onNavigate }) {
           >
             <Receipt size={13} color="#FCD34D" /> Bill History
           </button>
-          <button
-            onClick={() => onNavigate('staff')}
-            style={{
-              padding: '7px 14px',
-              borderRadius: '8px',
-              background: 'rgba(255,255,255,0.12)',
-              color: '#FFF',
-              border: '1px solid rgba(255,255,255,0.2)',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Users size={13} color="#FCD34D" /> Staff Performance
-          </button>
         </div>
       </div>
 
