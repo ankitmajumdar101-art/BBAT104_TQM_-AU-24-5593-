@@ -4,6 +4,11 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+const { 
+  createDatabaseBackup, 
+  enforceBackupRetention, 
+  getBackupStats 
+} = require('../services/autoBackupService');
 
 // All routes in this file strictly require the Admin role
 router.use(authenticateToken, authorizeRoles('Admin'));
@@ -114,7 +119,9 @@ router.get('/system-settings', async (req, res, next) => {
     };
     rows.forEach(r => { settings[r.setting_key] = r.setting_value; });
 
-    res.json({ success: true, settings });
+    const backupStats = await getBackupStats();
+
+    res.json({ success: true, settings, backupStats });
   } catch (error) {
     next(error);
   }
@@ -132,10 +139,10 @@ router.put('/system-settings', async (req, res, next) => {
 
     const allowedUpdates = {
       application_title: application_title ? application_title.trim() : 'Royal Feast Restaurant Billing & POS',
-      theme_preference: theme_preference || 'light',
-      auto_backup_enabled: auto_backup_enabled ? '1' : '0',
-      backup_frequency: backup_frequency || 'daily',
-      backup_retention_days: String(parseInt(backup_retention_days, 10) || 30)
+      theme_preference: theme_preference === 'dark' ? 'dark' : 'light',
+      auto_backup_enabled: auto_backup_enabled === '1' || auto_backup_enabled === true ? '1' : '0',
+      backup_frequency: ['daily', 'weekly', 'monthly'].includes(backup_frequency) ? backup_frequency : 'daily',
+      backup_retention_days: String(Math.max(7, Math.min(365, parseInt(backup_retention_days, 10) || 30)))
     };
 
     for (const [key, val] of Object.entries(allowedUpdates)) {
@@ -146,18 +153,47 @@ router.put('/system-settings', async (req, res, next) => {
       `, [key, val]);
     }
 
+    // Run retention cleanup
+    const prunedCount = await enforceBackupRetention();
+
     await logAudit({
       userId: req.user.id,
       username: req.user.username,
       role: req.user.role,
       action: 'UPDATE_SYSTEM_SETTINGS',
-      details: `Updated operational system settings: Auto-Backup=${allowedUpdates.auto_backup_enabled}, Retention=${allowedUpdates.backup_retention_days} days`
+      details: `Updated operational system settings: Title="${allowedUpdates.application_title}", Theme=${allowedUpdates.theme_preference}, Auto-Backup=${allowedUpdates.auto_backup_enabled}, Frequency=${allowedUpdates.backup_frequency}, Retention=${allowedUpdates.backup_retention_days} days (Pruned=${prunedCount})`
     });
+
+    const backupStats = await getBackupStats();
 
     res.json({
       success: true,
-      message: 'System operational settings updated successfully.',
-      settings: allowedUpdates
+      message: 'System operational settings updated and applied successfully.',
+      settings: allowedUpdates,
+      backupStats
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /system-settings/test-backup - Trigger immediate test backup from System Settings
+router.post('/system-settings/test-backup', async (req, res, next) => {
+  try {
+    const backupResult = await createDatabaseBackup({
+      userId: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      isAutomated: false
+    });
+
+    const backupStats = await getBackupStats();
+
+    res.json({
+      success: true,
+      message: `Test database backup "${backupResult.backupFile}" (${backupResult.fileSizeKb} KB) executed successfully!`,
+      backup: backupResult,
+      backupStats
     });
   } catch (error) {
     next(error);

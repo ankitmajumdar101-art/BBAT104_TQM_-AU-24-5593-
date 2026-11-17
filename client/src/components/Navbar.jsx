@@ -10,7 +10,7 @@ import {
   User as UserIcon 
 } from 'lucide-react';
 
-export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
+export default function Navbar({ user, activeTab, setActiveTab, onLogout, appTitle, themePreference }) {
   const isOwner = user?.role === 'Owner';
   const isAdmin = user?.role === 'Admin';
   const isCashier = user?.role === 'Cashier';
@@ -91,8 +91,8 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
             <UtensilsCrossed size={22} />
           </div>
           <div>
-            <h1 style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '-0.3px', margin: 0 }}>
-              Royal Feast
+            <h1 style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '-0.3px', margin: 0, color: '#FFF' }}>
+              {appTitle || 'Royal Feast'}
             </h1>
             <p style={{ fontSize: '11px', color: '#FCD34D', margin: 0, fontWeight: '700', letterSpacing: '0.4px' }}>
               {portalTitle}
@@ -132,6 +132,22 @@ export default function Navbar({ user, activeTab, setActiveTab, onLogout }) {
 
         {/* User Info & Logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {/* Active Theme Badge */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 10px',
+            borderRadius: '999px',
+            background: 'rgba(0,0,0,0.25)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            fontSize: '11px',
+            fontWeight: '700',
+            color: themePreference === 'dark' ? '#93C5FD' : '#FDE68A'
+          }}>
+            <span>{themePreference === 'dark' ? '🌙 Night Mode' : '☀️ Light Mode'}</span>
+          </div>
+
           <div style={{
             display: 'flex',
             alignItems: 'center',

@@ -15,7 +15,7 @@ import AdminAuditLogs from './AdminAuditLogs';
 import AdminSystemSettings from './AdminSystemSettings';
 import AdminProfile from './AdminProfile';
 
-export default function AdminDashboard({ currentUser, onLogout, initialSubTab = 'overview' }) {
+export default function AdminDashboard({ currentUser, onLogout, initialSubTab = 'overview', appTitle, themePreference }) {
   const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
 
   const sections = [
@@ -80,7 +80,12 @@ export default function AdminDashboard({ currentUser, onLogout, initialSubTab = 
         {activeSubTab === 'users' && <AdminUsers currentUser={currentUser} />}
         {activeSubTab === 'backup' && <AdminBackups />}
         {activeSubTab === 'audit' && <AdminAuditLogs />}
-        {activeSubTab === 'system' && <AdminSystemSettings />}
+        {activeSubTab === 'system' && (
+          <AdminSystemSettings 
+            appTitle={appTitle} 
+            themePreference={themePreference} 
+          />
+        )}
         {activeSubTab === 'profile' && <AdminProfile onLogout={onLogout} />}
       </div>
     </div>

@@ -174,6 +174,14 @@ All business rules, table state updates, discount limits, GST tax percentages (2
 * **SRS-ADM-06:** The system shall provide an immutable audit trail interface displaying all user actions, logins, menu updates, billing events, and security violations with timestamps and IP addresses.
 * **SRS-ADM-07:** The system shall provide a dedicated system error logs interface allowing administrators to inspect application exceptions and stack traces for operational reliability.
 
+#### E. System Operational Settings, Title & Display Theme Mode
+* **SRS-ADM-08: Application Display Title Dynamic Synchronization:** The system shall allow the System Administrator to configure the global Application Display Title in System Settings. When updated and saved, the system shall immediately update the browser window tab title (`document.title`), the main navigation header branding across all stakeholder portals, and persist the title in `restaurant_settings`. The public preferences hydration endpoint (`GET /api/system/preferences`) shall serve the configured title to all clients upon initial application load without requiring administrative authentication.
+* **SRS-ADM-09: Display Theme Mode (Light vs. Dark Low-Light Lounge / Night Shift):** The system shall provide a dedicated Display Theme Mode selector supporting:
+  * **Light Theme (Default Commercial POS):** High contrast layout optimized for bright daytime counter environments.
+  * **Dark Theme (Low-light Lounge / Night Shift):** Sleek, deep midnight-slate palette (`#0B0F19`, `#151D2A`, `#334155`) engineered for low-light dining lounges, bar areas, and evening service shifts to minimize eye fatigue and tablet glare.
+  The interface shall support live immediate preview upon selection, apply globally via `[data-theme="dark"]` / `body.dark-theme`, persist to `restaurant_settings.theme_preference` and client `localStorage`, and broadcast updates in real time via custom event dispatch (`app-settings-changed`).
+* **SRS-ADM-10: Automated Background Database Backup Scheduler & Retention Policy:** The system shall support automated background MySQL database backups with configurable frequency (`daily`, `weekly`, `monthly`) and an automated retention policy (`backup_retention_days`, 7 to 365 days). An automated background worker shall monitor backup schedules hourly and automatically purge snapshot files exceeding the retention threshold. An immediate test backup action (`POST /api/admin/system-settings/test-backup`) shall allow administrators to run and verify backup integrity directly from the System Settings panel.
+
 ---
 
 ### 4.3 Stakeholder 3 — Cashier Requirements
@@ -362,6 +370,7 @@ The system utilizes a relational database (`restaurant_billing_db`) running on M
 | **SRS-ADM-01 to 02** | `api/routes/users.js` & `AdminUsers.jsx` | Automated test asserting `HTTP 403` on Owner delete |
 | **SRS-ADM-03** | `api/routes/admin.js` & `AdminDashboard.jsx` | Automated test asserting `HTTP 403` on Admin menu/tax mutation |
 | **SRS-ADM-04 to 07** | `api/routes/backup.js`, `AuditLogs.jsx`, `ErrorLogs.jsx` | Disaster recovery & audit/error inspection tests |
+| **SRS-ADM-08 to 10** | `api/routes/system.js`, `api/routes/admin.js`, `autoBackupService.js` & `AdminSystemSettings.jsx` | Dynamic application title sync, dark/light display theme mode switch, auto-backup scheduler & retention pruning tests |
 | **SRS-CSH-01 to 03** | `client/src/components/POSBilling.jsx`, `ReceiptModal.jsx` & `DishImage.jsx` | POS menu card selection, order cart with dish thumbnails & printable receipt tests |
 | **SRS-CSH-04 to 06** | `client/src/components/cashier/CashierWaiterQueue.jsx` & `DishImage.jsx` | Waiter queue billing calculation test with dish thumbnails and chair breakdown finalizing into billed tickets |
 | **SRS-WTR-01 to 03** | `client/src/components/waiter/WaiterDashboard.jsx` & `api/routes/waiter.js` | Dining Room/Floor selector, 10 tables per room with 4-chair seating matrix, strict 4-guest capacity capping, customer seating & clear actions |

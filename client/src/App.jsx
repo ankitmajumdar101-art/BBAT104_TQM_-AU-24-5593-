@@ -13,6 +13,69 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
 
+  const [appTitle, setAppTitle] = useState(() => {
+    return localStorage.getItem('application_title') || 'Royal Feast Restaurant Billing & POS';
+  });
+  const [themePreference, setThemePreference] = useState(() => {
+    const saved = localStorage.getItem('theme_preference') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+    if (saved === 'dark') document.body.classList.add('dark-theme');
+    else document.body.classList.remove('dark-theme');
+    return saved;
+  });
+
+  // Fetch active system preferences on initial app mount
+  useEffect(() => {
+    const fetchSystemPrefs = async () => {
+      try {
+        const res = await fetch('/api/system/preferences');
+        const data = await res.json();
+        if (data.success && data.preferences) {
+          const { application_title, theme_preference: prefTheme } = data.preferences;
+          if (application_title) {
+            setAppTitle(application_title);
+            document.title = application_title;
+            localStorage.setItem('application_title', application_title);
+          }
+          if (prefTheme) {
+            setThemePreference(prefTheme);
+            document.documentElement.setAttribute('data-theme', prefTheme);
+            if (prefTheme === 'dark') document.body.classList.add('dark-theme');
+            else document.body.classList.remove('dark-theme');
+            localStorage.setItem('theme_preference', prefTheme);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch system preferences:', err);
+      }
+    };
+
+    fetchSystemPrefs();
+
+    // Listen to custom event when settings are updated in Admin panel
+    const handleSettingsChanged = (e) => {
+      if (!e.detail) return;
+      const { application_title, theme_preference: prefTheme } = e.detail;
+      if (application_title) {
+        setAppTitle(application_title);
+        document.title = application_title;
+        localStorage.setItem('application_title', application_title);
+      }
+      if (prefTheme) {
+        setThemePreference(prefTheme);
+        document.documentElement.setAttribute('data-theme', prefTheme);
+        if (prefTheme === 'dark') document.body.classList.add('dark-theme');
+        else document.body.classList.remove('dark-theme');
+        localStorage.setItem('theme_preference', prefTheme);
+      }
+    };
+
+    window.addEventListener('app-settings-changed', handleSettingsChanged);
+    return () => {
+      window.removeEventListener('app-settings-changed', handleSettingsChanged);
+    };
+  }, []);
+
   useEffect(() => {
     // Check saved session on mount
     const savedToken = localStorage.getItem('token');
@@ -98,12 +161,21 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
+        appTitle={appTitle}
+        themePreference={themePreference}
       />
 
       <main style={{ flex: 1 }}>
         {isOwner && <OwnerDashboard onLogout={handleLogout} />}
 
-        {isAdmin && <AdminDashboard currentUser={user} onLogout={handleLogout} />}
+        {isAdmin && (
+          <AdminDashboard 
+            currentUser={user} 
+            onLogout={handleLogout} 
+            appTitle={appTitle}
+            themePreference={themePreference}
+          />
+        )}
 
         {isCashier && <CashierDashboard currentUser={user} onLogout={handleLogout} />}
 

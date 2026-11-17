@@ -18,6 +18,8 @@ const ownerRoutes = require('./routes/owner');
 const adminRoutes = require('./routes/admin');
 const kitchenRoutes = require('./routes/kitchen');
 const waiterRoutes = require('./routes/waiter');
+const systemRoutes = require('./routes/system');
+const { initAutoBackupScheduler } = require('./services/autoBackupService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -57,6 +59,7 @@ app.use('/api/admin/audit-logs', auditRoutes);
 app.use('/api/admin/backups', backupRoutes);
 app.use('/api/kitchen', kitchenRoutes);
 app.use('/api/waiter', waiterRoutes);
+app.use('/api/system', systemRoutes);
 
 // Serve Production React Frontend
 const clientDist = path.join(__dirname, '../client/dist');
@@ -79,6 +82,7 @@ if (require.main === module) {
     console.log(`🌐 Web App URL: http://localhost:${PORT}`);
     console.log(`🛡️  TQM Reliability Features Active (Audit & Error Logs)`);
     console.log(`====================================================`);
+    initAutoBackupScheduler();
   });
 }
 

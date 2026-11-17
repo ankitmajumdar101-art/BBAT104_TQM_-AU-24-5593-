@@ -65,6 +65,143 @@ input, select, textarea {
   background: #94A3B8;
 }
 
+/* ============================================================
+   DARK THEME MODE (Low-light Lounge / Night Shift)
+   ============================================================ */
+[data-theme="dark"],
+body.dark-theme {
+  --bg-main: #0B0F19;
+  --bg-card: #151D2A;
+  --text-dark: #F8FAFC;
+  --text-muted: #94A3B8;
+  --border-color: #334155;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] body,
+body.dark-theme {
+  background-color: #0B0F19 !important;
+  color: #F8FAFC !important;
+}
+
+/* Background overrides for cards and panels */
+[data-theme="dark"] div[style*="background: #FFF"],
+[data-theme="dark"] div[style*="background: #fff"],
+[data-theme="dark"] div[style*="background:#FFF"],
+[data-theme="dark"] div[style*="background:#fff"],
+[data-theme="dark"] div[style*="background: white"],
+[data-theme="dark"] div[style*="background:white"],
+[data-theme="dark"] div[style*="background: rgb(255, 255, 255)"],
+[data-theme="dark"] section[style*="background: #FFF"],
+[data-theme="dark"] section[style*="background: #fff"],
+[data-theme="dark"] article[style*="background: #FFF"] {
+  background-color: #151D2A !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
+}
+
+/* Subtle slate backgrounds (#F8FAFC, #F1F5F9) */
+[data-theme="dark"] div[style*="background: #F8FAFC"],
+[data-theme="dark"] div[style*="background:#F8FAFC"],
+[data-theme="dark"] div[style*="background: #F1F5F9"],
+[data-theme="dark"] div[style*="background:#F1F5F9"],
+[data-theme="dark"] aside[style*="background: #F8FAFC"],
+[data-theme="dark"] aside[style*="background: #F1F5F9"] {
+  background-color: #0F172A !important;
+  border-color: #334155 !important;
+}
+
+/* Text color overrides */
+[data-theme="dark"] [style*="color: #0F172A"],
+[data-theme="dark"] [style*="color:#0F172A"],
+[data-theme="dark"] [style*="color: #000"] {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] [style*="color: #334155"],
+[data-theme="dark"] [style*="color:#334155"],
+[data-theme="dark"] [style*="color: #475569"],
+[data-theme="dark"] [style*="color:#475569"] {
+  color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] [style*="color: #64748B"],
+[data-theme="dark"] [style*="color:#64748B"] {
+  color: #94A3B8 !important;
+}
+
+/* Borders */
+[data-theme="dark"] [style*="border: 1px solid #E2E8F0"],
+[data-theme="dark"] [style*="border:1px solid #E2E8F0"],
+[data-theme="dark"] [style*="border: 1px solid #CBD5E1"],
+[data-theme="dark"] [style*="border:1px solid #CBD5E1"],
+[data-theme="dark"] [style*="border: 1px solid #F1F5F9"],
+[data-theme="dark"] [style*="border-top: 1px solid #F1F5F9"],
+[data-theme="dark"] [style*="border-bottom: 1px solid #F1F5F9"],
+[data-theme="dark"] [style*="border-bottom: 1px solid #E2E8F0"] {
+  border-color: #334155 !important;
+}
+
+/* Form inputs & controls */
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #64748B !important;
+}
+
+[data-theme="dark"] select option {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+}
+
+/* Tables */
+[data-theme="dark"] table {
+  border-color: #334155 !important;
+}
+[data-theme="dark"] th {
+  background-color: #0F172A !important;
+  color: #CBD5E1 !important;
+  border-color: #334155 !important;
+}
+[data-theme="dark"] td {
+  border-color: #334155 !important;
+}
+[data-theme="dark"] tr:hover td {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Modal dialog cards (excluding printable receipt) */
+[data-theme="dark"] .receipt-modal-card:not(#printable-receipt),
+[data-theme="dark"] div[style*="zIndex: 9999"]:not(#printable-receipt) {
+  background-color: #151D2A;
+  color: #F8FAFC;
+}
+
+/* Printable thermal receipt slip remains pure white with black ink for accurate printing */
+[data-theme="dark"] #printable-receipt,
+[data-theme="dark"] #printable-receipt * {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Custom Scrollbar in Dark Mode */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
 /* Print Utilities & Styles */
 .print-only {
   display: none !important;
