@@ -12,9 +12,11 @@ import {
   AlertCircle, 
   CheckCircle2, 
   RotateCcw,
-  Utensils
+  Utensils,
+  Sparkles
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import DishImage from '../common/DishImage';
 
 export default function CashierPOS({ user, loadedDraft, onClearLoadedDraft, onBillFinalized }) {
   const [categories, setCategories] = useState([]);
@@ -76,21 +78,31 @@ export default function CashierPOS({ user, loadedDraft, onClearLoadedDraft, onBi
       setActiveDraftId(loadedDraft.id);
 
       if (Array.isArray(loadedDraft.items) && loadedDraft.items.length > 0) {
-        const prefilledCart = loadedDraft.items.map(it => ({
-          id: it.menu_item_id || it.id,
-          name: it.item_name || it.name,
-          price: parseFloat(it.price || 0),
-          quantity: parseInt(it.quantity || 1, 10)
-        }));
+        const prefilledCart = loadedDraft.items.map(it => {
+          const catalogItem = menuItems.find(m => m.id === (it.menu_item_id || it.id));
+          return {
+            id: it.menu_item_id || it.id,
+            name: it.item_name || it.name,
+            price: parseFloat(it.price || 0),
+            quantity: parseInt(it.quantity || 1, 10),
+            image_url: it.image_url || catalogItem?.image_url || '',
+            category_name: it.category_name || catalogItem?.category_name || ''
+          };
+        });
         setCart(prefilledCart);
       }
       setFeedback({ type: 'success', message: `Resumed Draft #${loadedDraft.bill_number}. Finish billing or save updates.` });
     }
-  }, [loadedDraft]);
+  }, [loadedDraft, menuItems]);
 
   // Cart operations
   const handleAddToCart = (item) => {
     if (!item.available) return;
+
+    const hasDiscount = Boolean(item.discount_percent && parseFloat(item.discount_percent) > 0);
+    const finalPrice = hasDiscount 
+      ? (parseFloat(item.price) * (1 - parseFloat(item.discount_percent) / 100))
+      : parseFloat(item.price);
 
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
@@ -100,7 +112,10 @@ export default function CashierPOS({ user, loadedDraft, onClearLoadedDraft, onBi
         return [...prev, {
           id: item.id,
           name: item.name,
-          price: parseFloat(item.price),
+          price: finalPrice,
+          original_price: parseFloat(item.price),
+          image_url: item.image_url || '',
+          category_name: item.category_name || '',
           quantity: 1
         }];
       }
@@ -371,107 +386,194 @@ export default function CashierPOS({ user, loadedDraft, onClearLoadedDraft, onBi
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-            gap: '14px',
-            maxHeight: '620px',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
+            gap: '16px',
+            maxHeight: '640px',
             overflowY: 'auto',
             paddingRight: '4px'
           }}>
             {filteredMenuItems.map(item => {
               const isAvailable = Boolean(item.available);
               const inCartItem = cart.find(i => i.id === item.id);
+              const hasDiscount = Boolean(item.discount_percent && parseFloat(item.discount_percent) > 0);
+              const finalPrice = hasDiscount 
+                ? (parseFloat(item.price) * (1 - parseFloat(item.discount_percent) / 100))
+                : parseFloat(item.price);
 
               return (
                 <div
                   key={item.id}
+                  className="pos-dish-card"
                   onClick={() => isAvailable && handleAddToCart(item)}
                   style={{
                     background: isAvailable ? '#FFF' : '#F8FAFC',
-                    borderRadius: '14px',
+                    borderRadius: '16px',
                     border: inCartItem ? '2px solid #2563EB' : '1px solid #E2E8F0',
-                    padding: '14px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     cursor: isAvailable ? 'pointer' : 'not-allowed',
-                    opacity: isAvailable ? 1 : 0.6,
-                    transition: 'all 0.15s ease',
-                    boxShadow: inCartItem ? '0 4px 12px rgba(37, 99, 235, 0.15)' : 'none'
+                    opacity: isAvailable ? 1 : 0.65,
+                    transition: 'all 0.2s ease',
+                    boxShadow: inCartItem ? '0 6px 16px rgba(37, 99, 235, 0.2)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    overflow: 'hidden',
+                    position: 'relative'
                   }}
                 >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>
-                        {item.category_name}
-                      </span>
-                      {isAvailable ? (
-                        inCartItem && (
-                          <span style={{
-                            background: '#2563EB',
-                            color: '#FFF',
-                            fontSize: '11px',
-                            fontWeight: '800',
-                            borderRadius: '12px',
-                            padding: '2px 8px'
-                          }}>
-                            {inCartItem.quantity} in cart
-                          </span>
-                        )
-                      ) : (
-                        <span style={{
-                          background: '#FEE2E2',
-                          color: '#DC2626',
-                          fontSize: '10px',
-                          fontWeight: '800',
-                          borderRadius: '6px',
-                          padding: '2px 6px'
-                        }}>
-                          Out of Stock
-                        </span>
-                      )}
+                  {/* Top Dish Image Banner */}
+                  <div style={{ position: 'relative', width: '100%', height: '145px', overflow: 'hidden', background: '#F1F5F9' }}>
+                    <DishImage
+                      src={item.image_url}
+                      alt={item.name}
+                      category={item.category_name}
+                      price={finalPrice}
+                      discount_pct={item.discount_percent}
+                      description={item.description}
+                      size="card-banner"
+                      style={{ height: '100%', width: '100%', borderRadius: '15px 15px 0 0' }}
+                    />
+                    {/* Gradient overlay for contrast */}
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.25) 100%)',
+                      pointerEvents: 'none'
+                    }} />
+
+                    {/* Category Badge on image */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '8px',
+                      left: '8px',
+                      background: 'rgba(15, 23, 42, 0.75)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#FFF',
+                      fontSize: '10px',
+                      fontWeight: '800',
+                      padding: '3px 8px',
+                      borderRadius: '999px',
+                      letterSpacing: '0.3px',
+                      textTransform: 'uppercase'
+                    }}>
+                      {item.category_name}
                     </div>
 
-                    <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0', lineHeight: 1.3 }}>
-                      {item.name}
-                    </h4>
-                    {item.description && (
-                      <p style={{
-                        fontSize: '12px',
-                        color: '#64748B',
-                        margin: 0,
-                        overflow: 'hidden',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical'
+                    {/* Discount Badge on image */}
+                    {hasDiscount && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: '#EF4444',
+                        color: '#FFF',
+                        fontSize: '10px',
+                        fontWeight: '900',
+                        padding: '3px 7px',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
                       }}>
-                        {item.description}
-                      </p>
+                        <Sparkles size={11} /> {item.discount_percent}% OFF
+                      </div>
+                    )}
+
+                    {/* Out of Stock Overlay Badge */}
+                    {!isAvailable && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        left: '8px',
+                        background: 'rgba(220, 38, 38, 0.9)',
+                        color: '#FFF',
+                        fontSize: '10px',
+                        fontWeight: '800',
+                        padding: '2px 8px',
+                        borderRadius: '4px'
+                      }}>
+                        Out of Stock
+                      </div>
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #F1F5F9' }}>
-                    <span style={{ fontSize: '16px', fontWeight: '900', color: '#0F172A' }}>
-                      ₹{parseFloat(item.price).toFixed(2)}
-                    </span>
-                    <button
-                      disabled={!isAvailable}
-                      style={{
-                        background: isAvailable ? '#2563EB' : '#CBD5E1',
-                        border: 'none',
-                        color: '#FFF',
-                        borderRadius: '8px',
-                        padding: '6px 10px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        cursor: isAvailable ? 'pointer' : 'not-allowed'
-                      }}
-                    >
-                      <Plus size={14} />
-                      <span>Add</span>
-                    </button>
+                  {/* Card Content Below Image */}
+                  <div style={{ padding: '12px 14px 14px 14px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                        <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', margin: 0, lineHeight: 1.3 }}>
+                          {item.name}
+                        </h4>
+                        {inCartItem && (
+                          <span style={{
+                            background: '#2563EB',
+                            color: '#FFF',
+                            fontSize: '10px',
+                            fontWeight: '800',
+                            borderRadius: '999px',
+                            padding: '2px 8px',
+                            whiteSpace: 'nowrap',
+                            marginLeft: '6px'
+                          }}>
+                            {inCartItem.quantity} in cart
+                          </span>
+                        )}
+                      </div>
+
+                      {item.description && (
+                        <p style={{
+                          fontSize: '12px',
+                          color: '#64748B',
+                          margin: '2px 0 0 0',
+                          overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          lineHeight: 1.4
+                        }}>
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #F1F5F9' }}>
+                      <div>
+                        <span style={{ fontSize: '15px', fontWeight: '900', color: '#0F172A' }}>
+                          ₹{finalPrice.toFixed(2)}
+                        </span>
+                        {hasDiscount && (
+                          <span style={{ fontSize: '11px', color: '#94A3B8', textDecoration: 'line-through', marginLeft: '6px' }}>
+                            ₹{parseFloat(item.price).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={!isAvailable}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isAvailable) handleAddToCart(item);
+                        }}
+                        style={{
+                          background: isAvailable ? '#2563EB' : '#CBD5E1',
+                          border: 'none',
+                          color: '#FFF',
+                          borderRadius: '8px',
+                          padding: '6px 12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: isAvailable ? 'pointer' : 'not-allowed',
+                          boxShadow: isAvailable ? '0 2px 6px rgba(37, 99, 235, 0.3)' : 'none'
+                        }}
+                      >
+                        <Plus size={14} />
+                        <span>Add</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -653,18 +755,28 @@ export default function CashierPOS({ user, loadedDraft, onClearLoadedDraft, onBi
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '10px 12px',
+                    padding: '8px 12px',
                     borderBottom: '1px solid #F1F5F9',
                     background: '#FFF'
                   }}
                 >
-                  <div style={{ flex: 1, paddingRight: '8px' }}>
-                    <h5 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#1E293B' }}>
-                      {item.name}
-                    </h5>
-                    <span style={{ fontSize: '11px', color: '#64748B' }}>
-                      ₹{item.price.toFixed(2)} each
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, paddingRight: '8px', minWidth: 0 }}>
+                    <DishImage
+                      src={item.image_url}
+                      alt={item.name}
+                      category={item.category_name}
+                      price={item.price}
+                      size="sm"
+                      style={{ width: '38px', height: '38px', minWidth: '38px', minHeight: '38px', borderRadius: '8px' }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h5 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.name}
+                      </h5>
+                      <span style={{ fontSize: '11px', color: '#64748B' }}>
+                        ₹{item.price.toFixed(2)} each
+                      </span>
+                    </div>
                   </div>
 
                   {/* Quantity Stepper */}

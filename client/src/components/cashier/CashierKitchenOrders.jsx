@@ -8,6 +8,7 @@ import {
   Bell, 
   Utensils 
 } from 'lucide-react';
+import DishImage from '../common/DishImage';
 
 export default function CashierKitchenOrders() {
   const [orders, setOrders] = useState([]);
@@ -269,8 +270,17 @@ export default function CashierKitchenOrders() {
                     color: '#334155'
                   }}>
                     {(order.items || []).map((it, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-                        <span>• {it.item_name}</span>
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <DishImage
+                            src={it.image_url}
+                            alt={it.item_name}
+                            price={it.price}
+                            size="sm"
+                            style={{ width: '22px', height: '22px', minWidth: '22px', minHeight: '22px', borderRadius: '4px' }}
+                          />
+                          <span>{it.item_name}</span>
+                        </div>
                         <strong style={{ color: '#0F172A' }}>×{it.quantity}</strong>
                       </div>
                     ))}

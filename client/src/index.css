@@ -428,11 +428,29 @@ body.dark-theme {
 }
 
 /* 14. Business Profile & Settings Cards in Dark Mode */
-[data-theme="dark"] .business-profile-card {
+[data-theme="dark"] .business-profile-card,
+[data-theme="dark"] .pos-dish-card {
   background: linear-gradient(180deg, #131C2E 0%, #0E1524 100%) !important;
   color: #F8FAFC !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .pos-dish-card:hover {
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8), 0 0 16px rgba(59, 130, 246, 0.2) !important;
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .pos-dish-card h4 {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .pos-dish-card span[style*="font-size: 15px"],
+[data-theme="dark"] .pos-dish-card span[style*="fontSize: 15px"],
+[data-theme="dark"] .pos-dish-card span[style*="fontSize: '15px'"] {
+  color: #FBBF24 !important;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
 }
 
 [data-theme="dark"] .owner-notice-card {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Printer, X, CheckCircle2, QrCode, AlertTriangle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { printReceiptElement } from '../../utils/printReceipt';
+import DishImage from '../common/DishImage';
 
 export default function CashierReceiptModal({ order, onClose, isReprint = false }) {
   if (!order) return null;
@@ -183,7 +184,16 @@ export default function CashierReceiptModal({ order, onClose, isReprint = false 
                 {(order.items || []).map((item, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px dotted #F1F5F9' }}>
                     <td style={{ padding: '6px 0', fontWeight: '600' }}>
-                      {item.item_name}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <DishImage
+                          src={item.image_url}
+                          alt={item.item_name}
+                          price={item.price}
+                          size="sm"
+                          style={{ width: '22px', height: '22px', minWidth: '22px', minHeight: '22px', borderRadius: '4px' }}
+                        />
+                        <span>{item.item_name}</span>
+                      </div>
                     </td>
                     <td style={{ padding: '6px 0', textAlign: 'center' }}>
                       {item.quantity}
